@@ -16,7 +16,21 @@ defmodule CounterStreamTest do
 
   property "create commands" do
     check all cmds <- unfold(initial_state(), &command/1, &next_state/2) do
-      assert is_list(cmds)
+      Process.flag(:trap_exit, true)
+      pid = case Counter.start_link() do
+        {:ok, c_pid}  -> c_pid
+        {:error, {:already_started, _c_pid}} -> :kapputt # c_pid
+      end
+      Code.eval_quoted(cmds, [], __ENV__)
+      :ok = GenServer.stop(pid, :normal)
+      wait_for_stop(pid)
+    end
+  end
+
+  def wait_for_stop(pid) do
+    ref = Process.monitor(pid)
+    receive do
+      {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
     end
   end
 
@@ -45,7 +59,8 @@ defmodule CounterStreamTest do
   def next_state(c = {:call, _,:fail, _}, state), do: {call(c), state}
 
   defp call({:call, m, f, a}) do
-    quote bind_quoted: [m: m, f: f, a: a] do
+    quote location: :keep, bind_quoted: [m: m, f: f, a: a] do
+      assert f != :fail
       apply(m, f, a)
     end
   end
