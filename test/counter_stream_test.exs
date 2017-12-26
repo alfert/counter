@@ -8,22 +8,54 @@ defmodule CounterStreamTest do
   use ExUnitProperties
 
   #
-  # 1. Bilde das stream_code Beispiel nach, insbesondere, was
-  #    die map und bind Funktionen tun.
-  # 2. Erzeuge command-Listen: prop = is_list
-  # 3. Erzeuge command-Listen, die kein :fail enthalten dürfen -->
-  #    muss fehlschlagen und die kleinste Liste finden
+  # 1. Generation of call tuples or the likes works
+  # 2. The shrinking of the generated list does not work.
+
+  # property "find the fail command" do
+  #   check all cmds <- list_of(command(:what_ever)) do
+  #     assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+  #   end
+  # end
+  #
+  # property "find the mapped fail command" do
+  #   check all cmds <- (command(:what_ever)
+  #       |> StreamData.map(fn {:call, _, c, _} -> {c} end)  |> list_of()) do
+  #     assert Enum.all?(cmds, & ( &1!= {:fail}))
+  #   end
+  # end
+  #
+  # property "find the bound fail command" do
+  #   check all cmds <- gen_list(fn -> command(:what_ever)end) do
+  #     assert Enum.all?(cmds, & ( &1!= :fail))
+  #   end
+  # end
+
+  def gen_list(gen) do
+    StreamData.sized(fn
+        0 -> nil
+        n -> gen_list(n, gen)
+      end)
+  end
+  def gen_list(0, _), do: StreamData.constant([])
+  def gen_list(n, gen) do
+    gen.()
+    |> StreamData.bind(fn value -> [value | gen_list(n-1, gen)] end)
+    |> StreamData.map(fn {:call, _, c, _} -> c end)
+  end
 
   property "create commands" do
     check all cmds <- unfold(initial_state(), &command/1, &next_state/2) do
-      Process.flag(:trap_exit, true)
-      pid = case Counter.start_link() do
-        {:ok, c_pid}  -> c_pid
-        {:error, {:already_started, _c_pid}} -> :kapputt # c_pid
-      end
-      Code.eval_quoted(cmds, [], __ENV__)
-      :ok = GenServer.stop(pid, :normal)
-      wait_for_stop(pid)
+      IO.puts "cmds = #{inspect cmds}"
+      assert Enum.all?(cmds, & ( &1!= :fail))
+      # assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+      # Process.flag(:trap_exit, true)
+      # pid = case Counter.start_link() do
+      #   {:ok, c_pid}  -> c_pid
+      #   {:error, {:already_started, _c_pid}} -> :kapputt # c_pid
+      # end
+      # Code.eval_quoted(cmds, [], __ENV__)
+      # :ok = GenServer.stop(pid, :normal)
+      # wait_for_stop(pid)
     end
   end
 
@@ -58,12 +90,16 @@ defmodule CounterStreamTest do
   def next_state(c = {:call, _,:get, _}, state), do: {call(c), state}
   def next_state(c = {:call, _,:fail, _}, state), do: {call(c), state}
 
-  defp call({:call, m, f, a}) do
+  defp call_id({:call, _m, _f, _a} = c), do: c
+  defp call({:call, _m, f, _a} ), do: f
+
+  defp call_x({:call, m, f, a}) do
     quote location: :keep, bind_quoted: [m: m, f: f, a: a] do
       assert f != :fail
       apply(m, f, a)
     end
   end
+
 
   @spec unfold(acc, (acc -> StreamData.t(val)), (val, acc -> {other_val, acc})) ::
         StreamData.t(other_val) when acc: var, val: var, other_val: var
@@ -74,7 +110,7 @@ defmodule CounterStreamTest do
       size ->
         acc
         |> unfold(value_fun, next_fun, size)
-        |> StreamData.map(&{:__block__, [], &1})
+        # |> StreamData.map(&{:__block__, [], &1})
     end)
   end
 
