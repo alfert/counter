@@ -6,7 +6,7 @@ defmodule CounterStreamTest do
 
   use ExUnit.Case
   use ExUnitProperties
-
+  alias Statemachine, as: SM
   #
   # 1. Generation of call tuples or the likes works
   # 2. The shrinking of the generated list does not work.
@@ -25,26 +25,15 @@ defmodule CounterStreamTest do
   # end
   #
   # property "find the bound fail command" do
-  #   check all cmds <- gen_list(fn -> command(:what_ever)end) do
+  #   check all cmds <- SM.gen_list(fn -> command(:what_ever)end) do
   #     assert Enum.all?(cmds, & ( &1!= :fail))
   #   end
   # end
 
-  def gen_list(gen) do
-    StreamData.sized(fn
-        0 -> nil
-        n -> gen_list(n, gen)
-      end)
-  end
-  def gen_list(0, _), do: StreamData.constant([])
-  def gen_list(n, gen) do
-    gen.()
-    |> StreamData.bind(fn value -> [value | gen_list(n-1, gen)] end)
-    |> StreamData.map(fn {:call, _, c, _} -> c end)
-  end
 
   property "create commands" do
-    check all cmds <- unfold(initial_state(), &command/1, &next_state/2) do
+    check all cmds <- SM.unfold(initial_state(), &command/1, &next_state/2),
+        max_shrinking_steps: 1_000 do
       IO.puts "cmds = #{inspect cmds}"
       assert Enum.all?(cmds, & ( &1!= :fail))
       # assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
@@ -100,38 +89,5 @@ defmodule CounterStreamTest do
     end
   end
 
-
-  @spec unfold(acc, (acc -> StreamData.t(val)), (val, acc -> {other_val, acc})) ::
-        StreamData.t(other_val) when acc: var, val: var, other_val: var
-  def unfold(acc, value_fun, next_fun) do
-    StreamData.sized(fn
-      0 ->
-        StreamData.constant(nil)
-      size ->
-        acc
-        |> unfold(value_fun, next_fun, size)
-        # |> StreamData.map(&{:__block__, [], &1})
-    end)
-  end
-
-  defp unfold(acc, value_fun, next, size) do
-    acc
-    |> value_fun.()
-    |> StreamData.bind(&unfold_next(&1, acc, value_fun, next, size))
-  end
-
-  defp unfold_next(value, acc, value_fun, next, size) do
-    {quoted, acc} = next.(value, acc)
-    acc
-    |> unfold_tail(value_fun, next, size-1)
-    |> StreamData.map(&[quoted | &1])
-  end
-
-  defp unfold_tail(acc, value_fun, next, size) do
-    StreamData.frequency([
-      {1, StreamData.constant([])},
-      {size, unfold(acc, value_fun, next, size)}
-    ])
-  end
 
 end
