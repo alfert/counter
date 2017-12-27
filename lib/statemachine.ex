@@ -14,23 +14,6 @@ defmodule Statemachine do
   #
   ###############
   alias StreamData.LazyTree
-  @rand_algorithm :exsp
-  defp new(gen), do: %StreamData{generator: gen}
-  defp split_seed(seed) do
-    {int, seed} = :rand.uniform_s(1_000_000_000, seed)
-    new_seed = :rand.seed_s(@rand_algorithm, {int, 0, 0})
-    {new_seed, seed}
-  end
-  defp uniform_in_range(left..right, seed) when left <= right do
-    {random_int, _seed} = :rand.uniform_s(right - left + 1, seed)
-    random_int - 1 + left
-  end
-  defp uniform_in_range(left..right, seed) when left > right do
-    uniform_in_range(right..left, seed)
-  end
-  defp lazy_tree_constant(term), do: %LazyTree{root: term}
-  defp lazy_tree(root, children), do: %LazyTree{root: root, children: children}
-
   # initial_state() :: state_t,
   # call_gen(state_t) :: {call_t},
   # next_state(state_t, call_t) :: state
@@ -58,6 +41,25 @@ defmodule Statemachine do
       [StreamData.__call__(data, seed1, size) | result])
   end
 
+  # all private functions from here on are copies from stream_data
+  @rand_algorithm :exsp
+  defp new(gen), do: %StreamData{generator: gen}
+  defp split_seed(seed) do
+    {int, seed} = :rand.uniform_s(1_000_000_000, seed)
+    new_seed = :rand.seed_s(@rand_algorithm, {int, 0, 0})
+    {new_seed, seed}
+  end
+  defp uniform_in_range(left..right, seed) when left <= right do
+    {random_int, _seed} = :rand.uniform_s(right - left + 1, seed)
+    random_int - 1 + left
+  end
+  defp uniform_in_range(left..right, seed) when left > right do
+    uniform_in_range(right..left, seed)
+  end
+  defp lazy_tree_constant(term), do: %LazyTree{root: term}
+  defp lazy_tree(root, children), do: %LazyTree{root: root, children: children}
+
+  # copy from stream_data
   defp list_length_range_fun(options) do
     {min, max} =
       case Keyword.fetch(options, :length) do
