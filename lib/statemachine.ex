@@ -40,6 +40,41 @@ defmodule Statemachine do
     call_n_times(new_state, call_gen, next_state, seed2, size, length - 1,
       [StreamData.__call__(data, seed1, size) | result])
   end
+  # original version
+  defp call_n_times(_data, _seed, _size, 0, acc), do: acc
+  defp call_n_times(data, seed, size, length, acc) do
+    {seed1, seed2} = split_seed(seed)
+    call_n_times(data, seed2, size, length - 1,
+      [StreamData.__call__(data, seed1, size) | acc])
+  end
+
+  @spec unfold(acc_t, (acc_t -> {StreamData.t(data_t), acc_t})) :: StreamData.t([data_t]) when acc_t: var, data_t: var
+  def unfold(next_acc, next_fun, options \\ []) do
+    list_length_range_fun = list_length_range_fun(options)
+    new(fn seed, size ->
+      {seed1, seed2} = split_seed(seed)
+      min_length.._ = length_range = list_length_range_fun.(size)
+      length = uniform_in_range(length_range, seed1)
+
+      next_acc
+      |> do_unfold(next_fun, seed2, size, length, [])
+      |> LazyTree.zip()
+      |> LazyTree.map(&list_lazy_tree(&1, min_length))
+      |> LazyTree.flatten()
+    end)
+  end
+  def do_unfold(_next_acc, _next_fun, _seed, _size, 0, result), do: result
+  def do_unfold(next_acc, next_fun, seed, size, length, result) do
+    {seed1, seed2} = split_seed(seed)
+    {new_acc, data} = next_fun.(next_acc)
+    do_unfold(new_acc, next_fun, seed2, size, length - 1,
+      [StreamData.__call__(data, seed1, size) | result])
+  end
+
+  def my_list_of(data, options \\ []) do
+    unfold(nil, fn _ -> {nil, data} end, options)
+  end
+
 
   # all private functions from here on are copies from stream_data
   @rand_algorithm :exsp
@@ -94,6 +129,7 @@ defmodule Statemachine do
     fn size -> min..(max |> min(size) |> max(min)) end
   end
 
+  # copy from stream_data
   defp list_lazy_tree(list, min_length) do
     length = length(list)
 
