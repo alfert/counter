@@ -11,11 +11,11 @@ defmodule CounterStreamTest do
   # 1. Generation of call tuples or the likes works
   # 2. The shrinking of the generated list does not work.
 
-  # property "find the fail command" do
-  #   check all cmds <- list_of(command(:what_ever)) do
-  #     assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
-  #   end
-  # end
+  property "find the fail command" do
+    check all cmds <- SM.my_list_of(command(:what_ever)) do
+      assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+    end
+  end
   #
   # property "find the mapped fail command" do
   #   check all cmds <- (command(:what_ever)
@@ -30,9 +30,22 @@ defmodule CounterStreamTest do
   #   end
   # end
 
-  property "unfolded commands" do
+  property "unfolded list of commands" do
     check all cmds <- SM.list_of(initial_state(), &command/1, &next_state/2) do
-      IO.puts "cmds = #{inspect cmds}"
+      # IO.puts "cmds = #{inspect cmds}"
+      # assert Enum.all?(cmds, & ( &1!= :fail))
+      assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+    end
+  end
+
+  property "unfolded commands" do
+    my_cmd = fn state ->
+      new_cmd = command(state)
+      {_, new_state} = new_cmd |> Enum.take(1) |> hd() |> next_state(state)
+      {new_state, new_cmd}
+    end
+    check all cmds <- SM.unfold(initial_state(), my_cmd) do
+      # IO.puts "cmds = #{inspect cmds}"
       # assert Enum.all?(cmds, & ( &1!= :fail))
       assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
     end
