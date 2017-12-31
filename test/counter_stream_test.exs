@@ -12,8 +12,10 @@ defmodule CounterStreamTest do
   # 2. The shrinking of the generated list does not work.
 
   property "find the fail command" do
-    check all cmds <- SM.my_list_of(command(:what_ever)) do
-      assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+    assert_raise ExUnit.AssertionError, fn ->
+      check all cmds <- StreamData.list_of(command(:what_ever)) do
+        assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+      end
     end
   end
 
