@@ -32,6 +32,9 @@ defmodule CounterStreamTest do
       end
     end
   end
+
+  property "new unfolded commands" do
+    check all cmds <- SM.commands(__MODULE__) do
       # IO.puts "cmds = #{inspect cmds}"
       # assert Enum.all?(cmds, & ( &1!= :fail))
       assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
