@@ -16,19 +16,6 @@ defmodule CounterStreamTest do
       assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
     end
   end
-  #
-  # property "find the mapped fail command" do
-  #   check all cmds <- (command(:what_ever)
-  #       |> StreamData.map(fn {:call, _, c, _} -> {c} end)  |> list_of()) do
-  #     assert Enum.all?(cmds, & ( &1!= {:fail}))
-  #   end
-  # end
-  #
-  # property "find the bound fail command" do
-  #   check all cmds <- SM.gen_list(fn -> command(:what_ever)end) do
-  #     assert Enum.all?(cmds, & ( &1!= :fail))
-  #   end
-  # end
 
   property "unfolded list of commands" do
     check all cmds <- SM.list_of(initial_state(), &command/1, &next_state/2) do
@@ -50,23 +37,6 @@ defmodule CounterStreamTest do
       assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
     end
   end
-
-  # property "create commands" do
-  #   check all cmds <- SM.unfold(initial_state(), &command/1, &next_state/2),
-  #       max_shrinking_steps: 1_000 do
-  #     IO.puts "cmds = #{inspect cmds}"
-  #     assert Enum.all?(cmds, & ( &1!= :fail))
-  #     # assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
-  #     # Process.flag(:trap_exit, true)
-  #     # pid = case Counter.start_link() do
-  #     #   {:ok, c_pid}  -> c_pid
-  #     #   {:error, {:already_started, _c_pid}} -> :kapputt # c_pid
-  #     # end
-  #     # Code.eval_quoted(cmds, [], __ENV__)
-  #     # :ok = GenServer.stop(pid, :normal)
-  #     # wait_for_stop(pid)
-  #   end
-  # end
 
   def wait_for_stop(pid) do
     ref = Process.monitor(pid)
