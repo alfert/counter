@@ -19,14 +19,6 @@ defmodule CounterStreamTest do
     end
   end
 
-  property "unfolded list of commands" do
-    check all cmds <- SM.list_of(initial_state(), &command/1, &next_state/2) do
-      # IO.puts "cmds = #{inspect cmds}"
-      # assert Enum.all?(cmds, & ( &1!= :fail))
-      assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
-    end
-  end
-
   property "unfolded commands" do
     my_cmd = fn state ->
       new_cmd = command(state)
