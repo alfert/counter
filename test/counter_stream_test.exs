@@ -23,9 +23,15 @@ defmodule CounterStreamTest do
     my_cmd = fn state ->
       new_cmd = command(state)
       {_, new_state} = new_cmd |> Enum.take(1) |> hd() |> next_state(state)
-      {new_state, new_cmd}
+      {new_cmd, new_state}
     end
-    check all cmds <- SM.unfold(initial_state(), my_cmd) do
+    assert_raise ExUnit.AssertionError, fn ->
+      check all cmds <- StreamData.unfold(initial_state(), my_cmd) do
+        # IO.puts "cmds = #{inspect cmds}"
+        assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+      end
+    end
+  end
       # IO.puts "cmds = #{inspect cmds}"
       # assert Enum.all?(cmds, & ( &1!= :fail))
       assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
