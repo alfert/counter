@@ -35,7 +35,7 @@ defmodule CounterTest do
     end
   end
 
-  property "run a command sequence" do
+  property "run a failing command sequence" do
     forall cmds <- commands(__MODULE__) do
       IO.puts "Commands are: #{inspect cmds}"
       Process.flag(:trap_exit, true)
