@@ -16,6 +16,26 @@ defmodule Statemachine do
     end)
   end
 
+  # def proper_commands(mod) do
+  #   let initial_state <- mod.initial_state() do
+  #     such_that cmds <-
+  #       let list <- proper_sized(size,
+  #                       no_shrink(proper_commands(size, mod, initial_state, 1)) do
+  #          proper_shrink_list(list)
+  #       end, when: proper_is_valid(mod, initial_state, cmds),
+  #     do: cmds
+  #   end
+  # end
+  # def proper_commands(size, mod, state, position) when size > 1 do
+  #   let call <-
+  #     such_that x <- mod.command(state), when: mod.pre(x, state) do
+  #       var = {:var, position}
+  #       next_state = mod.next_state(state, var, call)
+  #       let cmds <- commands(size-1, mod, next_state, position + 1) do
+  #         [{:set, var, call} | cmds]
+  #       end
+  #     end
+  # end
 
   ##################################
   # @fishcake's unfold does not shrink properly.
