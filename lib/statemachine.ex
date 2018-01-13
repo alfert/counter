@@ -4,14 +4,18 @@ defmodule Statemachine do
   The `fishcakez_unfold`-algorithm is borrowed from @fishcakez.
   """
 
+  @spec commands(module) :: StreamData.t({mfa, any})
   def commands(mod) do
     StreamData.unfold(mod.initial_state(), fn state ->
       # Assumption:
       # The bind peals the command, which is required to
       # identify the next state. The pealed command is given back
-      # a constant - interesting, how do we shrink now?
-      StreamData.bind(mod.command(state), fn cmd ->
-        {StreamData.constant(cmd), mod.next_state(cmd, state)}
+      # as a  constant - will it shrink?
+      state
+      |> mod.command()
+      |> StreamData.map(fn cmd ->
+        IO.write "cmd is #{inspect cmd}"
+        {cmd, mod.next_state(cmd, state)}
       end)
     end)
   end
