@@ -26,7 +26,8 @@ defmodule Counter.Mixfile do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
       {:propcheck, "~> 1.0"},
       {:stream_data, path: "../stream_data", override: true},
-      {:stream_code, path: "../stream_code"}
+      {:stream_code, path: "../stream_code"},
+      {:type_class, "~> 1.2"}
     ]
   end
 end
