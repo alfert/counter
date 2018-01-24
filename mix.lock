@@ -1,3 +1,9 @@
-%{"propcheck": {:hex, :propcheck, "1.0.4", "f83174301b637bce011a4ebf0e4f10e9bae38d6eefebdd117677c7884bc99aa4", [], [{:proper, "~> 1.2.0", [hex: :proper, repo: "hexpm", optional: false]}], "hexpm"},
+%{"algae": {:hex, :algae, "1.1.0", "6d152fd62efb86385bded7421b635d7194d8a15f4e0ef841438740f9db41f48a", [], [{:quark, "~> 2.3", [hex: :quark, repo: "hexpm", optional: false]}, {:type_class, "~> 1.2", [hex: :type_class, repo: "hexpm", optional: false]}, {:witchcraft, "~> 1.0", [hex: :witchcraft, repo: "hexpm", optional: false]}], "hexpm"},
+  "exceptional": {:hex, :exceptional, "2.1.0", "b3bc6c7041a242df9f7e18223649f3d66633827897138cf5f26c46c88b6925ae", [], [], "hexpm"},
+  "operator": {:hex, :operator, "0.2.0", "b613bdb520a20dbc016d921d444fd2ef2212136be9385d6dca448a2a38d0577f", [], [], "hexpm"},
+  "propcheck": {:hex, :propcheck, "1.0.4", "f83174301b637bce011a4ebf0e4f10e9bae38d6eefebdd117677c7884bc99aa4", [], [{:proper, "~> 1.2.0", [hex: :proper, repo: "hexpm", optional: false]}], "hexpm"},
   "proper": {:hex, :proper, "1.2.0", "1466492385959412a02871505434e72e92765958c60dba144b43863554b505a4", [], [], "hexpm"},
-  "stream_data": {:hex, :stream_data, "0.4.0", "128c01bfd0fae0108d169eee1772aeed6958604f8782abc2d6e11da4e52468b0", [], [], "hexpm"}}
+  "quark": {:hex, :quark, "2.3.0", "3742ddc14441b4930c7067741879cb5b3e4881f391ea0aed7b138f20d16b30bb", [], [], "hexpm"},
+  "stream_data": {:hex, :stream_data, "0.4.0", "128c01bfd0fae0108d169eee1772aeed6958604f8782abc2d6e11da4e52468b0", [], [], "hexpm"},
+  "type_class": {:hex, :type_class, "1.2.2", "a84cab53b80e7c3c15f5ba9a550f5c68646c2b965d19f711f37473803d1ec2ff", [], [{:exceptional, "~> 2.1", [hex: :exceptional, repo: "hexpm", optional: false]}], "hexpm"},
+  "witchcraft": {:hex, :witchcraft, "1.0.0", "f307e6c73d62db50459c863cedc89c748f3c39a97389dcff7fc5a37612e31827", [], [{:exceptional, "~> 2.1", [hex: :exceptional, repo: "hexpm", optional: false]}, {:operator, "~> 0.2", [hex: :operator, repo: "hexpm", optional: false]}, {:quark, "~> 2.2", [hex: :quark, repo: "hexpm", optional: false]}, {:type_class, "~> 1.2", [hex: :type_class, repo: "hexpm", optional: false]}], "hexpm"}}
