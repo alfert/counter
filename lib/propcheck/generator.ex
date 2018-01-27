@@ -53,15 +53,18 @@ end
     end
   end
 
-  # ### implement the super type classes
-  # definst Witchcraft.Functor, for: Counter.PropCheck.Generator do
-  #   @spec map(gen:: Counter.PropCheck.Generator.t(a), map_fun :: (a -> b)) ::
-  #     Counter.PropCheck.Generator.t(b) when a: var, b: var
-  #   def map(gen, map_fun) do
-  #     fn seed, size ->
-  #       gen.gen_fun.(seed, size)
-  #       |> map_fun.()
-  #     end
-  #     |> Counter.PropCheck.Generator.new()
-  #   end
-  # end
+  ### implement the super type classes
+  definst Witchcraft.Functor, for: Counter.PropCheck.Generator do
+    # Properties don't work good enough for functional values.
+    @force_type_instance true
+
+    @spec map(gen:: Counter.PropCheck.Generator.t(a), map_fun :: (a -> b)) ::
+      Counter.PropCheck.Generator.t(b) when a: var, b: var
+    def map(gen, map_fun) do
+      fn seed ->
+        gen.gen_fun.(seed)
+        |> map_fun.()
+      end
+      |> Counter.PropCheck.Generator.new()
+    end
+  end
