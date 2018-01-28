@@ -1,14 +1,12 @@
 import TypeClass
 
-defclass Counter.PropCheck.Generator do
-  extend Witchcraft.Monad
+defmodule Counter.PropCheck.Generator do
 
   # access to monads and the like
   use Witchcraft
   # algebraic datastructures based data, sums and prods
   import Algae
 
-  where do
     @opaque t(a) :: a
     @typedoc """
     A type for a generator function, which takes a seed and
@@ -19,25 +17,23 @@ defclass Counter.PropCheck.Generator do
     Therefore we use the generic return type `any`.
     """
     @type gen_fun_t :: (non_neg_integer -> any)
-    # @type gen_fun_t(a) :: (non_neg_integer, non_neg_integer -> a)
+    # @type gen_fun_t(a) :: (non_neg_integer -> a)
     defdata do
-      gen_fun :: gen_fun_t() # \\\\ fn _, _ -> nil end
+      run_gen :: gen_fun_t()
     end
 
-    @doc """
-    Generates a new value from a generator with a given
-    size and seed.
-    """
-    @spec gen(t(a)) :: a when a: var
-    def gen(gen)
-  end
+    # @doc """
+    # Generates a new value from a generator with a given
+    # size and seed.
+    # """
+    # @spec gen(t(a)) :: a when a: var
+    # def gen(gen)
 
-  properties do
-    def generator_is_fun_1(gen) do
-      a = generate(gen)
-      is_function(a.gen_fun, 1)
+
+    def new(:gen_fun_t), do: new(fn _ -> nil end)
+    def new(gen_fun) when is_function(gen_fun, 1) do
+      %__MODULE__{run_gen: gen_fun}
     end
-  end
 
 end
   ############ Generator for TypeClass
@@ -62,9 +58,21 @@ end
       Counter.PropCheck.Generator.t(b) when a: var, b: var
     def map(gen, map_fun) do
       fn seed ->
-        gen.gen_fun.(seed)
+        gen.run_gen.(seed)
         |> map_fun.()
       end
       |> Counter.PropCheck.Generator.new()
+    end
+  end
+
+  definst Witchcraft.Apply, for: Counter.PropCheck.Generator do
+    # Properties don't work good enough for functional values.
+    @force_type_instance true
+    alias Counter.PropCheck.Generator
+
+    @spec convey(gen1 :: Generator.t(_a), gen2 :: Generator.t(_b)) :: Generator.t(_c)
+      when _a: var, _b: var, _c: var
+     def convey(gen1, %Generator{run_gen: run_gen2}) do
+      Witchcraft.Functor.map(gen1, run_gen2)
     end
   end
