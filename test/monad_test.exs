@@ -31,13 +31,15 @@ defmodule Counter.PropCheck.Monads.Test do
     end
 
     test "a generator provides an apply" do
-      # apply takes two generators and applies them as functions.
+      # Apply.convey takes two generators and applies them as functions.
       f1 = fn x -> 2 * x end
       f2 = fn x -> x + 1 end
       gen1 = Generator.new(f1)
       gen2 = Generator.new(f2)
       for i <- 1..100 do
         assert Apply.convey(gen2, gen1).run_gen.(i) == f1.(f2.(i))
+        gens = [gen2, gen1] |> Enum.map(&Generator.gen/1)
+        assert Apply.ap(gens, [i]) == [f2.(i), f1.(i)]
       end
     end
 
