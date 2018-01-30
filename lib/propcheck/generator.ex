@@ -80,3 +80,16 @@ end
       Witchcraft.Functor.map(gen1, run_gen2)
     end
   end
+
+  definst Witchcraft.Applicative, for: Counter.PropCheck.Generator do
+    # Properties don't work good enough for functional values.
+    @force_type_instance true
+    alias Counter.PropCheck.Generator
+
+    def of(%Generator{}, fun) when is_function(fun, 1) do
+      Generator.new(fun)
+    end
+    def of(%Generator{}, data)  do
+      Generator.new(fn _ -> data end)
+    end
+  end

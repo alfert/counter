@@ -5,6 +5,8 @@ defmodule Counter.PropCheck.Monads.Test do
   alias Counter.PropCheck.Generator
   alias Witchcraft.Functor
   alias Witchcraft.Apply
+  alias Witchcraft.Applicative
+
   describe "Generators are Monads" do
 
     test "create a default generator struct" do
@@ -41,6 +43,11 @@ defmodule Counter.PropCheck.Monads.Test do
         gens = [gen2, gen1] |> Enum.map(&Generator.gen/1)
         assert Apply.ap(gens, [i]) == [f2.(i), f1.(i)]
       end
+    end
+
+    test "a generator is an applicative" do
+      wrapped = Applicative.of(%Generator{}, &(&1+1))
+      assert Generator.gen(wrapped, 5) == 6
     end
 
   end
