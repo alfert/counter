@@ -5,7 +5,7 @@ defmodule Counter.PropCheck.Monads.Test do
   alias Counter.PropCheck.Generator
   describe "Generators are Monads" do
 
-    test "create a default generator struct which is not a function" do
+    test "create a default generator struct" do
       def_gen = Generator.new()
       # 5 is an arbitrary integer value
       assert nil == def_gen.run_gen.(5)
