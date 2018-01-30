@@ -22,13 +22,17 @@ defmodule Counter.PropCheck.Generator do
       run_gen :: gen_fun_t()
     end
 
-    # @doc """
-    # Generates a new value from a generator with a given
-    # size and seed.
-    # """
-    # @spec gen(t(a)) :: a when a: var
-    # def gen(gen)
 
+    @doc """
+    Generates a new value from a generator with a given size.
+    """
+    @spec gen(t(a), integer) :: a when a: var
+    def gen(%__MODULE__{run_gen: g}, seed), do: g.(seed)
+    @doc """
+    Curried version of gen/2. 
+    """
+    @spec gen(t(a)) :: (integer -> a) when a: var
+    def gen(%__MODULE__{run_gen: g}), do: g
 
     def new(:gen_fun_t), do: new(fn _ -> nil end)
     def new(gen_fun) when is_function(gen_fun, 1) do
