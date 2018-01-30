@@ -4,6 +4,7 @@ defmodule Counter.PropCheck.Monads.Test do
 
   alias Counter.PropCheck.Generator
   alias Witchcraft.Functor
+  alias Witchcraft.Apply
   describe "Generators are Monads" do
 
     test "create a default generator struct" do
@@ -26,6 +27,17 @@ defmodule Counter.PropCheck.Monads.Test do
       gen2 = gen |> Functor.map(mapper)
       for i <- 1..100 do
         assert gen2.run_gen.(i) == mapper.(2*i)
+      end
+    end
+
+    test "a generator provides an apply" do
+      # apply takes two generators and applies them as functions.
+      f1 = fn x -> 2 * x end
+      f2 = fn x -> x + 1 end
+      gen1 = Generator.new(f1)
+      gen2 = Generator.new(f2)
+      for i <- 1..100 do
+        assert Apply.convey(gen2, gen1).run_gen.(i) == f1.(f2.(i))
       end
     end
 
