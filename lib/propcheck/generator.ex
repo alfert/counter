@@ -8,6 +8,9 @@ defmodule Counter.PropCheck.Generator do
   import Algae
 
     @opaque t(a) :: a
+
+    @opaque seed_t :: :rand.state()
+
     @typedoc """
     A type for a generator function, which takes a seed and
     creates a new value.
@@ -16,23 +19,25 @@ defmodule Counter.PropCheck.Generator do
     however, parameterized types are not supported properly in `Algae`.
     Therefore we use the generic return type `any`.
     """
-    @type gen_fun_t :: (non_neg_integer -> any)
-    # @type gen_fun_t(a) :: (non_neg_integer -> a)
+    @type gen_fun_t :: (seed_t -> any)
+    @type gen_fun_t(a) :: (seed_t -> a)
+    @type internal_gen_fun_t(a) :: (seed_t -> {a, seed_t})
     defdata do
       run_gen :: gen_fun_t()
     end
 
 
     @doc """
+    Curried version of gen/2.
+    """
+    @spec gen(t(a)) :: gen_fun_t(a) when a: var
+    def gen(%__MODULE__{run_gen: g}), do: g
+
+    @doc """
     Generates a new value from a generator with a given size.
     """
     @spec gen(t(a), integer) :: a when a: var
     def gen(%__MODULE__{run_gen: g}, seed), do: g.(seed)
-    @doc """
-    Curried version of gen/2. 
-    """
-    @spec gen(t(a)) :: (integer -> a) when a: var
-    def gen(%__MODULE__{run_gen: g}), do: g
 
     def new(:gen_fun_t), do: new(fn _ -> nil end)
     def new(gen_fun) when is_function(gen_fun, 1) do
