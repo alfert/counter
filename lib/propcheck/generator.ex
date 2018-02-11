@@ -94,6 +94,7 @@ end
     def of(%Generator{}, fun) when is_function(fun, 1) do
       Generator.new(fun)
     end
+    def of(%Generator{}, gen = %Generator{}), do: gen
     def of(%Generator{}, data)  do
       Generator.new(fn _ -> data end)
     end
