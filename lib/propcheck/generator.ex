@@ -44,6 +44,36 @@ defmodule Counter.PropCheck.Generator do
       %__MODULE__{run_gen: gen_fun}
     end
 
+    @spec choose(integer, integer) :: internal_gen_fun_t(integer)
+    def choose(low, high) when is_integer(low) and is_integer(high) and Kernel.<(low,high) do
+      n = high - low
+      fn seed ->
+        {rand_value, new_seed} = :rand.uniform_s(seed, n)
+        {low + rand_value, new_seed}
+      end
+    end
+
+    @doc """
+    Splits a seed into two separated seeds.
+
+    It uses the `jump` function of the Erlang `:rand` function.
+    """
+    @spec split(seed_t) :: {seed_t, seed_t}
+    def split(seed) do
+      split1 = :rand.jump(seed)
+      split2 = :rand.jump(split1)
+      {split1, split2}
+    end
+
+    @doc """
+    Initializes the random number generator `:exs1024` with the three
+    given integer parameters. Useful in particular for testing.
+    """
+    @spec init_seed(integer, integer, integer) :: seed_t
+    def init_seed(s1, s2, s3) do
+      :rand.seed(:exs1024, {s1, s2, s3})
+    end
+
 end
   ############ Generator for TypeClass
   defimpl TypeClass.Property.Generator, for: Counter.PropCheck.Generator do
