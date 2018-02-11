@@ -50,6 +50,30 @@ defmodule Counter.PropCheck.Monads.Test do
       assert Generator.gen(wrapped, 5) == 6
     end
 
+    test "a generator follows the identity law of applicative" do
+      id = fn x -> x end
+      double = fn x -> 2 * x end
+      gen = Generator.new(double)
+      for i <- 1..100 do
+        gen2 = [gen]
+          |> Enum.map(&Generator.gen/1)
+          |> Apply.ap([Applicative.of(Generator.new(), id)])
+        x = Generator.gen(gen2, i)
+        assert x == Generator.gen(gen, i)
+      end
+    end
+
+    test "a generator provides an applicative lift" do
+      one = fn _x -> 1 end
+      two = fn _x  -> 2  end
+      gen_one = Generator.new(one)
+      gen_two = Generator.new(two)
+      gen_app = Apply.lift(gen_one, gen_two, fn a, b -> {a, b} end)
+      seed = Generator.init_seed(0, 1, 2)
+      lifted = gen_app.run_gen.(seed)
+      assert {1, 2} == lifted
+    end
+
   end
 
 end
