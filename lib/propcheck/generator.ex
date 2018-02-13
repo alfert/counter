@@ -3,7 +3,10 @@ import TypeClass
 defmodule Counter.PropCheck.Generator do
 
   # access to monads and the like
-  use Witchcraft
+  use Witchcraft.Functor
+  use Witchcraft.Apply
+  use Witchcraft.Applicative
+  use Witchcraft.Monad 
   # algebraic datastructures based data, sums and prods
   import Algae
 
