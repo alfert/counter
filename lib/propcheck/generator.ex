@@ -130,11 +130,20 @@ end
     # Properties don't work good enough for functional values.
     @force_type_instance true
     alias Counter.PropCheck.Generator
+    alias Witchcraft.Functor
 
-    @spec convey(gen1 :: Generator.t(_a), gen2 :: Generator.t(_b)) :: Generator.t(_c)
+    @spec convey(gen1 :: Generator.t(_a), gen2 :: Generator.t((_b -> _c)) ):: Generator.t(_c)
       when _a: var, _b: var, _c: var
-     def convey(gen1, %Generator{run_gen: run_gen2}) do
-      Witchcraft.Functor.map(gen1, run_gen2)
+    def convey(gen1, gen2_fun) do
+      # gen2_fun is a Generator, which generates a function with one
+      # argument which needs to be applied to get a "real" value.
+      # This is what convey produces.
+      fn seed ->
+        {s1, s2} = Generator.split(seed)
+        {v1, _} = Generator.gen(gen1, s1)
+        {v2, _} = Generator.gen(gen2_fun, s2).(v1)
+        v2
+      end
     end
   end
 
