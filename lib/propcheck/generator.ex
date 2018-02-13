@@ -77,6 +77,25 @@ defmodule Counter.PropCheck.Generator do
       :rand.seed(:exs1024, {s1, s2, s3})
     end
 
+    def my_lift(gen1, gen2, fun) do
+      fn seed ->
+        {s1, s2} = split(seed)
+        {v1, _s} = Generator.gen(gen1, s1)
+        {v2, _s} = Generator.gen(gen2, s2)
+        fun.(v1, v2)
+      end
+      |> Generator.new()
+    end
+
+    def my_lift2(gen1, gen2, fun) do
+      # curried_gen.gen(seed) returns a function waiting for a second value
+      # since Functor.lift curries fun.
+      curried_gen = gen1 |> lift(fun)
+
+      curried_gen
+      |> fn f -> convey(gen2, f) end.()
+    end
+
 end
   ############ Generator for TypeClass
   defimpl TypeClass.Property.Generator, for: Counter.PropCheck.Generator do
