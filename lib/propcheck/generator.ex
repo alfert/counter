@@ -6,7 +6,7 @@ defmodule Counter.PropCheck.Generator do
   use Witchcraft.Functor
   use Witchcraft.Apply
   use Witchcraft.Applicative
-  use Witchcraft.Monad 
+  use Witchcraft.Monad
   # algebraic datastructures based data, sums and prods
   import Algae
 
@@ -39,8 +39,9 @@ defmodule Counter.PropCheck.Generator do
     @doc """
     Generates a new value from a generator with a given size.
     """
-    @spec gen(t(a), integer) :: a when a: var
+    @spec gen(t(a), seed_t) :: a when a: var
     def gen(%__MODULE__{run_gen: g}, seed), do: g.(seed)
+    def gen(g, seed) when is_function(g, 1), do: g.(seed)
 
     def new(:gen_fun_t), do: new(fn _ -> nil end)
     def new(gen_fun) when is_function(gen_fun, 1) do
@@ -84,7 +85,7 @@ defmodule Counter.PropCheck.Generator do
         {v2, _s} = Generator.gen(gen2, s2)
         fun.(v1, v2)
       end
-      |> Generator.new()
+      |> new()
     end
 
     def my_lift2(gen1, gen2, fun) do
