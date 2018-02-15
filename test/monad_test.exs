@@ -51,31 +51,37 @@ defmodule Counter.PropCheck.Monads.Test do
     end
 
     test "a generator follows the identity law of applicative" do
-      id = fn x -> x end
-      double = fn x -> 2 * x end
-      gen = Generator.new(double)
+      # Identitiy is a functional generator, i.e. it generates
+      # a function which returns its argument (= identity)
+      id = fn _seed -> (fn x -> x end) end
+      # The value to double is the generator's parameter
+      double = fn x -> (fn _seed -> x * 2 end) end
+
+      seed = Generator.init_seed(0, 1, 2)
       for i <- 1..100 do
-        gen2 = [gen]
-          |> Enum.map(&Generator.gen/1)
-          |> Apply.ap([Applicative.of(Generator.new(), id)])
-        x = Generator.gen(gen2, i)
-        assert x == Generator.gen(gen, i)
+        gen = Generator.new(double.(i))
+        app_id = id |> Generator.new() # |> Generator.gen()
+        gen2 = Apply.ap(app_id, Generator.new(double.(i)))
+          # |> Enum.map(&Generator.gen/1) # We now have a set generator functions
+          # Apply.ap([Generator.new(id).gen], [Generator.new(double.(i))])
+        x = Generator.gen(gen2, seed)
+        assert x == Generator.gen(gen, seed)
       end
     end
 
     test "a generator provides an applicative lift" do
-      one = fn s -> {1, s} end
-      two = fn s -> {2, s} end
+      one = fn _s -> 1 end # {1, s} end
+      two = fn _s -> 2 end # {2, s} end
       pair = fn a, b -> {a, b} end
       gen_one = Generator.new(one)
       gen_two = Generator.new(two)
       gen_app = Apply.lift(gen_one, gen_two, pair)
       seed = Generator.init_seed(0, 1, 2)
-      lifted = gen_app.run_gen.(seed)
+      lifted = Generator.gen(gen_app, seed)
       l = fn seed ->
         {s1, s2} = Generator.split(seed)
-        {x, _s3} = one.(s1)
-        {y, _s4} = two.(s2)
+        x = one.(s1)
+        y = two.(s2)
         pair.(x, y)
       end
 
