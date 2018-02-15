@@ -24,6 +24,7 @@ defmodule Counter.PropCheck.Monads.Test do
     end
 
     test "a generator functor provides a map" do
+      # This works because map does not care about the generator seed.
       gen = Generator.new(fn x -> 2*x end)
       mapper = fn x -> x + 1 end
       gen2 = gen |> Functor.map(mapper)
@@ -34,14 +35,17 @@ defmodule Counter.PropCheck.Monads.Test do
 
     test "a generator provides an apply" do
       # Apply.convey takes two generators and applies them as functions.
-      f1 = fn x -> 2 * x end
-      f2 = fn x -> x + 1 end
-      gen1 = Generator.new(f1)
-      gen2 = Generator.new(f2)
+      seed = Generator.init_seed(0, 1, 2)
+      const = fn v -> (fn _seed -> v end) end
+      two = const.(2)
+      inc = fn _seed -> (fn x -> x + 1 end) end
+      gen_2 = Generator.new(two)
+      gen_inc = Generator.new(inc)
+
+      assert Generator.gen(Apply.ap(gen_inc, gen_2), seed) == 3
       for i <- 1..100 do
-        assert Apply.convey(gen2, gen1).run_gen.(i) == f1.(f2.(i))
-        gens = [gen2, gen1] |> Enum.map(&Generator.gen/1)
-        assert Apply.ap(gens, [i]) == [f2.(i), f1.(i)]
+        g_conv = Generator.new(const.(i)) |> Apply.convey(gen_inc)
+        assert Generator.gen(g_conv, seed) == (inc.(seed)).(const.(i).(seed))
       end
     end
 
