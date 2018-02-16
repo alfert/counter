@@ -48,13 +48,29 @@ defmodule Counter.PropCheck.Generator do
       %__MODULE__{run_gen: gen_fun}
     end
 
-    @spec choose(integer, integer) :: internal_gen_fun_t(integer)
-    def choose(low, high) when is_integer(low) and is_integer(high) and Kernel.<(low,high) do
+    ###
+    # Generator function for integer values within a range.
+    ###
+    @spec choose(integer, integer) :: gen_fun_t(integer)
+    defp choose(low, high) when is_integer(low) and is_integer(high) and Kernel.<(low,high) do
       n = high - low
       fn seed ->
-        {rand_value, new_seed} = :rand.uniform_s(seed, n)
-        {low + rand_value, new_seed}
+        {rand_value, _new_seed} = :rand.uniform_s(n, seed)
+        low + rand_value
       end
+    end
+
+    @doc """
+    Trivial generator, which generates always the same constant
+    """
+    @spec constant(v :: a) :: t(a) when a: var
+    def constant(v), do: new(fn _ -> v end)
+
+    @doc """
+    Generator for integer values within a certain range.
+    """
+    def integer(lower..upper) do
+      choose(lower, upper) |> new()
     end
 
     @doc """
@@ -81,8 +97,8 @@ defmodule Counter.PropCheck.Generator do
     def my_lift(gen1, gen2, fun) do
       fn seed ->
         {s1, s2} = split(seed)
-        {v1, _s} = Generator.gen(gen1, s1)
-        {v2, _s} = Generator.gen(gen2, s2)
+        {v1, _s} = gen(gen1, s1)
+        {v2, _s} = gen(gen2, s2)
         fun.(v1, v2)
       end
       |> new()
