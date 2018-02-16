@@ -6,6 +6,7 @@ defmodule Counter.PropCheck.Monads.Test do
   alias Witchcraft.Functor
   alias Witchcraft.Apply
   alias Witchcraft.Applicative
+  use Witchcraft.Chain
 
   describe "Generators are Monads" do
 
@@ -90,6 +91,23 @@ defmodule Counter.PropCheck.Monads.Test do
       end
 
       assert l.(seed) == lifted
+    end
+
+    test "and provide a chain function" do
+      seed = Generator.init_seed(0, 1, 2)
+      i = Generator.integer(1..100)
+      j = Generator.integer(1..100)
+      {s1, s2} = Generator.split(seed)
+      k = Generator.gen(i, s1) * Generator.gen(j, s2)
+      # gen = Generator.new()
+
+      chained = chain do
+        let a = Generator.integer(1..100)
+        let b = Generator.integer(1..100)
+        lift(a, b, &( &1 * &2))
+      end
+
+      assert Generator.gen(chained, seed) == k
     end
 
   end
