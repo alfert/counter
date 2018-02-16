@@ -3,9 +3,10 @@ import TypeClass
 defmodule Counter.PropCheck.Generator do
 
   # access to monads and the like
-  use Witchcraft.Functor
-  use Witchcraft.Apply
-  use Witchcraft.Applicative
+  # use Witchcraft.Functor
+  # use Witchcraft.Apply
+  # use Witchcraft.Applicative
+  # use Witchcraft.Chain
   use Witchcraft.Monad
   # algebraic datastructures based data, sums and prods
   import Algae
@@ -175,4 +176,22 @@ end
     def of(%Generator{}, data)  do
       Generator.new(fn _ -> data end)
     end
+  end
+
+  definst Witchcraft.Chain, for: Counter.PropCheck.Generator do
+    # Properties don't work good enough for functional values.
+    @force_type_instance true
+    alias Counter.PropCheck.Generator
+
+    def chain(gen, link_fun) do
+      # chain = gen |> map(link_fun) |> flatten()
+      fn seed ->
+        {s1, s2} = Generator.split(seed)
+        gen
+        |> Generator.gen(s1)
+        |> link_fun.()
+        |> Generator.gen(s2)
+      end
+    end
+
   end
