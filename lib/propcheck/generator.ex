@@ -92,8 +92,10 @@ defmodule Counter.PropCheck.Generator do
     """
     @spec init_seed(integer, integer, integer) :: seed_t
     def init_seed(s1, s2, s3) do
-      :rand.seed(:exs1024, {s1, s2, s3})
+      :rand.seed_s(:exs1024, {s1, s2, s3})
     end
+    @spec init_seed({integer, integer, integer}) :: seed_t
+    def init_seed({s1, s2, s3}), do: init_seed(s1, s2, s3)
 
     def my_lift(gen1, gen2, fun) do
       fn seed ->
@@ -114,7 +116,38 @@ defmodule Counter.PropCheck.Generator do
       |> fn f -> convey(gen2, f) end.()
     end
 
+    # This is the implementation of Enumerable.reduce/3. It's here because it
+    # needs split_seed/1 and call/3 which are private.
+    @doc false
+    @spec __reduce__(t, Enumerable.acc, Enumerable.reducer) :: Enumerable.result
+    def __reduce__(generator, acc, fun) do
+      reduce(generator, acc, fun, init_seed(:os.timestamp()), _initial_size = 1, _max_size = 100)
+    end
+
+    defp reduce(_generator, {:halt, acc}, _fun, _seed, _size, _max_size) do
+      {:halted, acc}
+    end
+
+    defp reduce(generator, {:suspend, acc}, fun, seed, size, max_size) do
+      {:suspended, acc, &reduce(generator, &1, fun, seed, size, max_size)}
+    end
+
+    defp reduce(generator, {:cont, acc}, fun, seed, size, max_size) do
+      {seed1, _seed2} = split(seed)
+      next = gen(generator, seed)
+      reduce(generator, fun.(next, acc), fun, seed1, min(max_size, size + 1), max_size)
+    end
+
 end
+  ############ A Generator is also a stream
+  defimpl Enumerable, for: Counter.PropCheck.Generator do
+    def count(_), do: {:error, __MODULE__}
+    def member?(_, _), do: {:error, __MODULE__}
+    def slice(_), do: {:error, __MODULE__}
+
+    def reduce(gen, acc, fun), do: @for.__reduce__(gen, acc, fun)
+  end
+
   ############ Generator for TypeClass
   defimpl TypeClass.Property.Generator, for: Counter.PropCheck.Generator do
     def generate(_) do
