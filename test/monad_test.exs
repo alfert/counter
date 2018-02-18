@@ -112,4 +112,22 @@ defmodule Counter.PropCheck.Monads.Test do
 
   end
 
+  describe "Generators provide Data as" do
+
+    test "integer values" do
+      for lower <- 1..10 do
+        for upper <- lower+1..20 do
+          Generator.integer(lower .. upper)
+          |> Stream.take(10)
+          |> Stream.map(fn v ->
+            assert v <= upper
+            assert v >= lower
+          end)
+          |> Stream.run()
+        end
+      end
+    end
+
+  end
+
 end
