@@ -77,7 +77,7 @@ defmodule Counter.PropCheck.Generator do
     @doc """
     Splits a seed into two separated seeds.
 
-    It uses the `jump` function of the Erlang `:rand` function.
+    It uses the `jump` function of the Erlang `:rand` module.
     """
     @spec split(seed_t) :: {seed_t, seed_t}
     def split(seed) do
@@ -87,12 +87,14 @@ defmodule Counter.PropCheck.Generator do
     end
 
     @doc """
-    Initializes the random number generator `:exs1024` with the three
-    given integer parameters. Useful in particular for testing.
+    Initializes the random number generator `:exrop` with the three
+    given integer parameters.
+
+    Useful in particular for testing to achieve reproducable test runs.
     """
     @spec init_seed(integer, integer, integer) :: seed_t
     def init_seed(s1, s2, s3) do
-      :rand.seed_s(:exs1024, {s1, s2, s3})
+      :rand.seed_s(:exrop, {s1, s2, s3})
     end
     @spec init_seed({integer, integer, integer}) :: seed_t
     def init_seed({s1, s2, s3}), do: init_seed(s1, s2, s3)
