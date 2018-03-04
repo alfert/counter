@@ -3,6 +3,7 @@ defmodule Counter.PropCheck.Monads.Test do
   use ExUnit.Case
 
   alias Counter.PropCheck.Generator
+  alias Counter.PropCheck.Arbitrary
   alias Witchcraft.Functor
   alias Witchcraft.Apply
   alias Witchcraft.Applicative
@@ -128,7 +129,7 @@ defmodule Counter.PropCheck.Monads.Test do
           end)
           |> Enum.sum()
           # This is to check, that the generated values are
-          # really random. 
+          # really random.
           assert div(sum, @nr_of_elements) != 0
 
           # assert sum/@nr_of_elements <= (lower + upper + 2) / 2
@@ -137,6 +138,25 @@ defmodule Counter.PropCheck.Monads.Test do
       end
     end
 
+  end
+
+  describe "Arbitrary shrinkers: " do
+
+    test "0 is not shrinkable" do
+      assert [] == Arbitrary.shrink(0)
+    end
+
+    test "bisect positive numbers from left to right" do
+      children = Arbitrary.shrink(2048)
+      list = Enum.to_list(children)
+      assert [0,1024,1536,1792,1920,1984,2016,2032,2040,2044,2046,2047] == list
+    end
+
+    test "bisect negative numbers from left to right" do
+      children = Arbitrary.shrink(-2048)
+      list = Enum.to_list(children)
+      assert [2048,0,-1024,-1536,-1792,-1920,-1984,-2016,-2032,-2040,-2044,-2046,-2047] == list
+    end
   end
 
 end

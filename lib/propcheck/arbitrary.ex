@@ -19,4 +19,36 @@ defclass Counter.PropCheck.Arbitrary do
     end
   end
 
+  def run_gen(generator), do:
+    generator |> Counter.PropCheck.Generator.gen()
+
+end
+
+# alias the fresh defined type class for shorter source code.
+alias Counter.PropCheck.Arbitrary
+
+# Implementation for all types that do not support shrinking
+definst Arbitrary, for: Any do
+  def shrink(_), do: []
+  def arbitrary(generator), do: Arbitrary.run_gen(generator)
+end
+
+definst Arbitrary, for: Integer do
+  def arbitrary(generator), do: Arbitrary.run_gen(generator)
+  @doc """
+  Shrinks an integer. There are three approaches:
+  * if `n` is `0`, then there is nothing to do.
+  * if `n` is negative, try the absolute value of `n`
+  * otherwise do an interval bisection from 0 towards n.
+  """
+  def shrink(0), do: []
+  def shrink(n) when n < 0, do: Stream.concat([-n], bisect(n)) 
+  def shrink(n), do: bisect(n)
+
+  defp bisect(n) do
+    n
+    |> Stream.iterate(fn m -> div(m, 2) end)
+    |> Stream.map(fn m -> n - m end)
+    |> Stream.take_while(fn m -> abs(m) < abs(n) end)
+  end
 end
