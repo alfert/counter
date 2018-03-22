@@ -75,6 +75,13 @@ defmodule Counter.PropCheck.Generator do
     end
 
     @doc """
+    16 bit signed integer generation - Perhaps we find something nicer...
+    """
+    def integer() do
+      integer(-32768..32767)
+    end
+
+    @doc """
     Splits a seed into two separated seeds.
 
     It uses the `jump` function of the Erlang `:rand` module.
