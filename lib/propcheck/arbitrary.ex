@@ -2,9 +2,10 @@ import TypeClass
 defclass Counter.PropCheck.Arbitrary do
   where do
     @doc """
-    Generates arbitrary values from the given generator
+    Generates arbitrary values from the given generator as a stream 
+    of values.
     """
-    @spec arbitrary(Counter.PropCheck.Generator.t(a)):: a when a: var
+    @spec arbitrary(Counter.PropCheck.Generator.t(a)):: Enumerable.t(a) when a: var
     def arbitrary(generator)
 
     @doc """
@@ -42,7 +43,7 @@ definst Arbitrary, for: Integer do
   * otherwise do an interval bisection from 0 towards n.
   """
   def shrink(0), do: []
-  def shrink(n) when n < 0, do: Stream.concat([-n], bisect(n)) 
+  def shrink(n) when n < 0, do: Stream.concat([-n], bisect(n))
   def shrink(n), do: bisect(n)
 
   defp bisect(n) do
