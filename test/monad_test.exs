@@ -4,6 +4,7 @@ defmodule Counter.PropCheck.Monads.Test do
 
   alias Counter.PropCheck.Generator
   alias Counter.PropCheck.Arbitrary
+  alias Counter.PropCheck.Property
   alias Witchcraft.Functor
   alias Witchcraft.Apply
   alias Witchcraft.Applicative
@@ -156,6 +157,12 @@ defmodule Counter.PropCheck.Monads.Test do
       children = Arbitrary.shrink(-2048)
       list = Enum.to_list(children)
       assert [2048,0,-1024,-1536,-1792,-1920,-1984,-2016,-2032,-2040,-2044,-2046,-2047] == list
+    end
+  end
+
+  describe "First properties: " do
+    test "for all ints: they are greater then 1 (will fail)" do
+      assert Property.for_all(Generator.integer, fn n -> n > 1 end)
     end
   end
 
