@@ -15,13 +15,13 @@ defmodule Counter.PropCheck.Property do
   """
   @type property_t :: (Generator.seed_t -> Result.t)
 
-  @spec quickcheck(property_t, non_neg_integer) :: :Result.t
+  @spec quickcheck(property_t, non_neg_integer) :: Result.t
   def quickcheck(prop, nr_of_test_runs \\ 100) do
     seed = Generator.init_seed(:os.timestamp())
     quickcheck(prop, nr_of_test_runs, seed)
   end
 
-  @spec quickcheck(property_t, pos_integer, Generator.seed_t) :: :Result.t
+  @spec quickcheck(property_t, pos_integer, Generator.seed_t) :: Result.t
   def quickcheck(prop, nr_of_test_runs, seed) when nr_of_test_runs > 0  do
     qc_result = 1.. nr_of_test_runs
     |> Enum.flat_map_reduce({seed, Result.Success.new()}, fn _i, {s, _r}  ->
@@ -60,7 +60,12 @@ defmodule Counter.PropCheck.Property do
     case safe(test).(arg) do
       true -> Result.Success.new()
       false -> Result.Failure.new(arg, nil)
-      e = %ExUnit.AssertionError{} -> Result.Failure.new(arg, e)
+      e = %ExUnit.AssertionError{} ->
+        stack = System.stacktrace()
+        # |> Enum.drop_while(fn {mod, _, _, _} -> mod != __MODULE__ end)
+        # |> Enum.drop_while(fn {mod, _, _, _} -> mod == __MODULE__ end)
+        msg = Exception.format(:error, e, stack)
+        Result.Failure.new(arg, e, msg, stack)
     end
   end
 end

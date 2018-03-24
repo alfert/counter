@@ -1,5 +1,6 @@
 import TypeClass
 defmodule Counter.PropCheck.Result do
+  alias Counter.PropCheck.Generator
   import Algae
   @moduledoc """
   This is the result of a property check. Either it is a sucess
@@ -16,6 +17,8 @@ defmodule Counter.PropCheck.Result do
     defdata Failure do
       counter_example :: String.t
       seed :: {integer, integer, integer}
+      exception :: String.t | ExUnit.AssertionError.t
+      stacktrace :: any
     end
   end
 
@@ -23,8 +26,8 @@ defmodule Counter.PropCheck.Result do
   Creates a new `Failure` struct with the given counter example `ct_ex`
   and the `seed`.
   """
-  @spec new(ct_ex :: String.t, seed :: {integer, integer, integer}) :: Failure.t
-  defdelegate new(ct_ex, seed), to: Failure, as: :new
+  @spec new(ct_ex :: String.t, seed :: Generator.seed_t) :: Failure.t
+  defdelegate new(ct_ex, seed, msg \\ "", stack \\ System.stacktrace()), to: Failure, as: :new
 
   @spec over_failure(t, (t -> t)) :: t
   def over_failure(r = %Success{}, _fun), do: r
