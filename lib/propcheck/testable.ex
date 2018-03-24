@@ -27,7 +27,7 @@ defmodule Counter.PropCheck.Result do
   defdelegate new(ct_ex, seed), to: Failure, as: :new
 
   @spec over_failure(t, (t -> t)) :: t
-  def over_failure(Sucess, _fun), do: Sucess
+  def over_failure(r = %Success{}, _fun), do: r
   def over_failure(r, fun), do: fun.(r)
 
   properties do
@@ -71,13 +71,3 @@ definst Witchcraft.Monoid, for: Result do
   """
   def empty(_r), do: Result.new()
 end
-
-# defclass Counter.PropCheck.Testable do
-#
-#   where do
-#
-#
-#
-#
-#   end
-# end
