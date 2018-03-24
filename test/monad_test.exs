@@ -5,6 +5,7 @@ defmodule Counter.PropCheck.Monads.Test do
   alias Counter.PropCheck.Generator
   alias Counter.PropCheck.Arbitrary
   alias Counter.PropCheck.Property
+  alias Counter.PropCheck.Result
   alias Witchcraft.Functor
   alias Witchcraft.Apply
   alias Witchcraft.Applicative
@@ -162,7 +163,10 @@ defmodule Counter.PropCheck.Monads.Test do
 
   describe "First properties: " do
     test "for all ints: they are greater then 1 (will fail)" do
-      assert Property.for_all(Generator.integer, fn n -> n > 1 end)
+      r = Generator.integer
+      |> Property.for_all(fn n -> assert n > 1 end)
+      |> Property.quickcheck()
+      assert r == Result.Success.new()
     end
   end
 
