@@ -27,7 +27,7 @@ defmodule Counter.Mixfile do
       {:propcheck, "~> 1.0"},
       {:stream_data, path: "../stream_data", override: true},
       {:stream_code, path: "../stream_code"},
-      {:type_class, "~> 1.2"},
+      # {:type_class, path: "../type_class", override: true}, # "~> 1.2"},
       {:algae, "~> 1.1"},
       {:ex_doc, "~>0.16", only: :dev},
     ]
