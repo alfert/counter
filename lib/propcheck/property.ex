@@ -7,6 +7,8 @@ defmodule Counter.PropCheck.Property do
 
   ##
   ## TODO:
+  ## - Result Tree for shrinking - use Algae.Rose, because it is already
+  ##   a functor (but eager - should we change that?)
   ## - combining properties
   ##
 
@@ -45,27 +47,37 @@ defmodule Counter.PropCheck.Property do
   @spec for_all(Generator.t, testable) :: property_t
   def for_all(argGen, testable) do
     p = fn(seed) ->
-      Generator.gen(argGen, seed)
-      |> run_test(testable)
+      {s1, s2} = Generator.split(seed)
+      Generator.gen(argGen, s1)
+      |> run_test(testable, s2)
       |> Result.over_failure(fn r -> %Result.Failure{r | seed: seed} end)
     end
     p
   end
 
-  @spec run_test(any, (any -> Result.t | boolean)) :: Result
-  defp run_test(arg, test) do
+  @spec run_test(any, (any -> Result.t | boolean), Generator.seed_t) :: Result
+  defp run_test(arg, test, seed) do
     use Exceptional
     # use the Exceptional function `safe` to easily handle exceptions
     # such as assertions as if they would return a regular return value
     case safe(test).(arg) do
-      true -> Result.Success.new()
-      false -> Result.Failure.new(arg, nil)
-      e = %ExUnit.AssertionError{} ->
-        stack = System.stacktrace()
-        # |> Enum.drop_while(fn {mod, _, _, _} -> mod != __MODULE__ end)
-        # |> Enum.drop_while(fn {mod, _, _, _} -> mod == __MODULE__ end)
-        msg = Exception.format(:error, e, stack)
-        Result.Failure.new(arg, e, msg, stack)
+      sub_prop when is_function(sub_prop, 1) ->
+        sub_prop.(seed)
+      value -> value
     end
+    |> to_result(arg)
   end
+
+  defp to_result(true, _), do: Result.Success.new()
+  defp to_result(false, arg), do: Result.Failure.new(arg, nil)
+  defp to_result(e = %ExUnit.AssertionError{}, arg) do
+    stack = System.stacktrace()
+    # |> Enum.drop_while(fn {mod, _, _, _} -> mod != __MODULE__ end)
+    # |> Enum.drop_while(fn {mod, _, _, _} -> mod == __MODULE__ end)
+    msg = Exception.format(:error, e, stack)
+    Result.Failure.new(arg, e, msg, stack)
+  end
+  defp to_result(r = %Result.Failure{exception: msg}, arg), do:
+    %Result.Failure{r | exception: "Argument: #{inspect arg}\n" <> msg}
+  defp to_result(r = %Result.Success{}, _arg), do: r
 end
