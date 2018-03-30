@@ -168,6 +168,26 @@ defmodule Counter.PropCheck.Monads.Test do
       |> Property.quickcheck()
       assert r == Result.Success.new()
     end
+
+    test "use 2 ints and add them which should be even (will fail)" do
+      require Integer
+      r = Generator.integer
+      |> Property.for_all(fn n ->
+        Generator.integer()
+        |> Property.for_all(fn m -> assert n == m end)
+      end)
+      |> Property.quickcheck()
+      assert r == Result.Success.new()
+    end
+
+    test "use 2 ints in a list and add them which should be even (will fail)" do
+      require Integer
+      r = [Generator.integer, Generator.integer]
+      |> Property.for_all(fn [n, m] -> assert n == m end)
+      |> Property.quickcheck()
+      assert r == Result.Success.new()
+    end
+
   end
 
 end
