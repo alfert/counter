@@ -3,6 +3,36 @@ defmodule Statemachine do
   Property-based testing or better data generation with a state machine in mind.
   The `fishcakez_unfold`-algorithm is borrowed from @fishcakez.
   """
+  alias StreamData.LazyTree
+
+  defstruct [
+    history: [],
+    state: nil,
+    result: :ok
+  ]
+
+  def run_commands(mod, commands) do
+    commands
+    |> Enum.reduce(%__MODULE__{}, fn cmd, acc ->
+        cmd
+        |> execute_cmd(mod)
+        |> update_history(acc)
+    end)
+    |> Map.put(:result, :ok)
+  end
+
+  def execute_cmd({state, c = {:call, m, f, args}}, mod) do
+    import ExUnit.Assertions
+    assert mod.precondition(state, c)
+    result = apply(m, f, args)
+    assert mod.postcondition(state, c, result)
+    {state, c, result}
+  end
+
+  def update_history(event = {s, _, r}, %__MODULE__{history: h}) do
+    %__MODULE__{state: s, result: r, history: [event | h]}
+  end
+
 
   @spec commands(module) :: StreamData.t({mfa, any})
   def commands(mod) do
@@ -19,6 +49,82 @@ defmodule Statemachine do
       end)
     end)
   end
+
+  def generate_commands(mod) do
+    %StreamData{generator: fn seed, size ->
+      gen_cmd_list(mod.initial_state(), mod, size, seed)
+      |> LazyTree.zip()
+      |> LazyTree.map(&list_lazy_tree(&1, 1)) # min size is 1
+      |> LazyTree.flatten()
+      # this is like list_uniq: filter out invalid values
+      |> LazyTree.filter(&check_preconditions(mod, &1))
+    end}
+  end
+
+  def gen_cmd_list(_state, _mod, 0, _seed), do: []
+  def gen_cmd_list(state, mod, size, seed) do
+    {seed1, seed2} = split_seed(seed)
+    tree = StreamData.__call__({state, mod.command(state)}, seed1, size)
+    {_s, generated_call} = tree.root
+    {_, next_state} = mod.next_state(generated_call, state)
+    [tree | gen_cmd_list(next_state, mod, size-1, seed2)]
+  end
+
+  def check_preconditions(mod, list) do
+    list
+    |> Enum.all?(fn {state, call} -> mod.precondition(state, call) end)
+  end
+
+  ##########
+  ## Borrowed from StreamData
+  @type state_t :: any
+  @spec list_lazy_tree([{state_t, LazyTree.t}], non_neg_integer) :: LazyTree.t
+  defp list_lazy_tree(list, min_length) do
+    length = length(list)
+
+    if length == min_length do
+      lazy_tree_constant(list)
+    else
+      #############
+      # TODO: Shrinking is wrong, must obey the state machine.
+      #       but how?
+      # IDEA: Check how regular list shrinking happens.
+      #   - shrink the list size by half?
+      #   - take the state and shrink with that state the commands
+      #   - relevant could be the missing precondition.
+      # CHECK:
+      #   - Do the same with proper to see if shrinking reveals the same.
+      #
+
+      children =
+        Stream.map((length - 1)..0, fn index ->
+          list_lazy_tree(List.delete_at(list, index), min_length)
+        end)
+
+      lazy_tree(list, children)
+    end
+  end
+
+  defp lazy_tree(root, children) do
+    %LazyTree{root: root, children: children}
+  end
+
+  defp lazy_tree_constant(term) do
+    %LazyTree{root: term}
+  end
+
+  if String.to_integer(System.otp_release()) >= 20 do
+    @rand_algorithm :exsp
+  else
+    @rand_algorithm :exs64
+  end
+  defp split_seed(seed) do
+    {int, seed} = :rand.uniform_s(1_000_000_000, seed)
+    new_seed = :rand.seed_s(@rand_algorithm, {int, 0, 0})
+    {new_seed, seed}
+  end
+  ## END of borrowed functions
+  ######################
 
   # def proper_commands(mod) do
   #   let initial_state <- mod.initial_state() do
