@@ -105,14 +105,14 @@ defmodule CounterStreamTest do
   @type call_type :: {:call, atom, atom, list(any)}
   @spec next_state(call :: call_type, state :: state_type)
       :: {Macro.t, state_type}
-  def next_state(c = {:call, _,:inc, _}, :init), do: {call(c), :zero}
-  def next_state(c = {:call, _,:clear, _}, :init), do: {call(c), :zero}
-  def next_state(c = {:call, _,:clear, _}, :zero), do: {call(c), :zero}
-  def next_state(c = {:call, _,:inc, _}, :zero), do: {call(c), :one}
-  def next_state(c = {:call, _,:inc, _}, :one), do: {call(c), :one}
-  def next_state(c = {:call, _,:clear, _}, :one), do: {call(c), :zero}
-  def next_state(c = {:call, _,:get, _}, state), do: {call(c), state}
-  def next_state(c = {:call, _,:fail, _}, state), do: {call(c), state}
+  def next_state(c = {:call, _,:inc, _}, :init), do:  {the_fun(c), :zero}
+  def next_state(c = {:call, _,:clear, _}, :init), do:  {the_fun(c), :zero}
+  def next_state(c = {:call, _,:clear, _}, :zero), do:  {the_fun(c), :zero}
+  def next_state(c = {:call, _,:inc, _}, :zero), do:  {the_fun(c), :one}
+  def next_state(c = {:call, _,:inc, _}, :one), do:  {the_fun(c), :one}
+  def next_state(c = {:call, _,:clear, _}, :one), do:  {the_fun(c), :zero}
+  def next_state(c = {:call, _,:get, _}, state), do:  {the_fun(c), state}
+  def next_state(c = {:call, _,:fail, _}, state), do:  {the_fun(c), state}
 
   def precondition(:init, {:call, _, :get, _}), do: false
   def precondition(_, _), do: true
@@ -136,5 +136,8 @@ defmodule CounterStreamTest do
   def postcondition(_old_state, {:call, _m, _f, _a}, _result) do
     false
   end
+
+
+  defp the_fun({:call, _m, f, _a} ), do: f
 
 end
