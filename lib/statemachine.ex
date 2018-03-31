@@ -37,7 +37,7 @@ defmodule Statemachine do
     %StreamData{generator: fn seed, size ->
       gen_cmd_list(mod.initial_state(), mod, size, seed)
       |> LazyTree.zip()
-      |> LazyTree.map(&list_lazy_tree(&1, 1)) # min size is 1
+      |> LazyTree.map(&command_lazy_tree(&1, 1)) # min size is 1
       |> LazyTree.flatten()
       # this is like list_uniq: filter out invalid values
       |> LazyTree.filter(&check_preconditions(mod, &1))
@@ -61,27 +61,19 @@ defmodule Statemachine do
   ##########
   ## Borrowed from StreamData
   @type state_t :: any
-  @spec list_lazy_tree([{state_t, LazyTree.t}], non_neg_integer) :: LazyTree.t
-  defp list_lazy_tree(list, min_length) do
+  @spec command_lazy_tree([{state_t, LazyTree.t}], non_neg_integer) :: LazyTree.t
+  defp command_lazy_tree(list, min_length) do
     length = length(list)
 
     if length == min_length do
       lazy_tree_constant(list)
     else
-      #############
-      # TODO: Shrinking is wrong, must obey the state machine.
-      #       but how?
-      # IDEA: Check how regular list shrinking happens.
-      #   - shrink the list size by half?
-      #   - take the state and shrink with that state the commands
-      #   - relevant could be the missing precondition.
-      # CHECK:
-      #   - Do the same with proper to see if shrinking reveals the same.
-      #
-
+      # in contrast to lists we shrink from the end
+      # towards the front and have a minimum list of 1
+      # element: The initial command.
       children =
-        Stream.map((length - 1)..0, fn index ->
-          list_lazy_tree(List.delete_at(list, index), min_length)
+        Stream.map((length - 1)..1, fn index ->
+          command_lazy_tree(List.delete_at(list, index), min_length)
         end)
 
       lazy_tree(list, children)
