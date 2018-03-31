@@ -137,16 +137,4 @@ defmodule CounterStreamTest do
     false
   end
 
-
-  defp call_id({:call, _m, _f, _a} = c), do: c
-  defp call({:call, _m, f, _a} ), do: f
-
-  defp call_x({:call, m, f, a}) do
-    quote location: :keep, bind_quoted: [m: m, f: f, a: a] do
-      assert f != :fail
-      apply(m, f, a)
-    end
-  end
-
-
 end
