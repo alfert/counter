@@ -7,6 +7,8 @@ defmodule CounterStreamTest do
   use ExUnit.Case
   use ExUnitProperties
   alias Statemachine, as: SM
+  require Logger
+  import ExUnit.CaptureLog
 
   property "find the fail command" do
     assert_raise ExUnit.AssertionError, fn ->
@@ -20,7 +22,7 @@ defmodule CounterStreamTest do
     ex = assert_raise ExUnit.AssertionError, fn ->
       check all cmds <- SM.generate_commands(__MODULE__) do
         if Enum.any?(cmds, &failed_call?/1) do
-          IO.puts "cmds = #{inspect cmds}"
+          capture_log(fn -> Logger.error "cmds = #{inspect cmds}" end)
         end
         assert Enum.all?(cmds, &no_failed_call?/1)
       end
