@@ -34,14 +34,14 @@ defmodule Statemachine do
   end
 
   def generate_commands(mod) do
-    %StreamData{generator: fn seed, size ->
+    new(fn seed, size ->
       gen_cmd_list(mod.initial_state(), mod, size, seed)
       |> LazyTree.zip()
       |> LazyTree.map(&command_lazy_tree(&1, 1)) # min size is 1
       |> LazyTree.flatten()
       # this is like list_uniq: filter out invalid values
       |> LazyTree.filter(&check_preconditions(mod, &1))
-    end}
+    end)
   end
 
   def gen_cmd_list(_state, _mod, 0, _seed), do: []
@@ -58,9 +58,6 @@ defmodule Statemachine do
     |> Enum.all?(fn {state, call} -> mod.precondition(state, call) end)
   end
 
-  ##########
-  ## Borrowed from StreamData
-  @type state_t :: any
   @spec command_lazy_tree([{state_t, LazyTree.t}], non_neg_integer) :: LazyTree.t
   defp command_lazy_tree(list, min_length) do
     length = length(list)
@@ -78,6 +75,14 @@ defmodule Statemachine do
 
       lazy_tree(list, children)
     end
+  end
+
+  ##########
+  ## Borrowed from StreamData
+  @type state_t :: any
+
+  defp new(generator) when is_function(generator, 2) do
+    %StreamData{generator: generator}
   end
 
   defp lazy_tree(root, children) do
