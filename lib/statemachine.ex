@@ -4,6 +4,7 @@ defmodule Statemachine do
   The `fishcakez_unfold`-algorithm is borrowed from @fishcakez.
   """
   alias StreamData.LazyTree
+  require Logger
 
   defstruct [
     history: [],
@@ -35,7 +36,7 @@ defmodule Statemachine do
 
   def generate_commands(mod) do
     new(fn seed, size ->
-      gen_cmd_list(mod.initial_state(), mod, size, seed)
+      gen_cmd_list(mod.initial_state(), mod, size, 1, seed)
       |> LazyTree.zip()
       |> LazyTree.map(&command_lazy_tree(&1, 1)) # min size is 1
       |> LazyTree.flatten()
@@ -44,14 +45,17 @@ defmodule Statemachine do
     end)
   end
 
-  def gen_cmd_list(_state, _mod, 0, _seed), do: []
-  def gen_cmd_list(state, mod, size, seed) do
+  def gen_cmd_list(_state, _mod, 0, _position, _seed), do: []
+  def gen_cmd_list(state, mod, size, position, seed) do
     {seed1, seed2} = split_seed(seed)
+    Logger.debug "gen_cmd_list: state is #{inspect state}"
     s = StreamData.constant(state)
+    Logger.debug "gen_cmd_list: s is #{inspect s}"
     tree = StreamData.__call__({s, mod.command(state)}, seed1, size)
     {gen_state, generated_call} = tree.root
-    {_, next_state} = mod.next_state(generated_call, gen_state)
-    [tree | gen_cmd_list(next_state, mod, size-1, seed2)]
+    gen_result = {:var, position}
+    next_state = mod.next_state(gen_state, gen_result, generated_call)
+    [tree | gen_cmd_list(next_state, mod, size - 1, position + 1, seed2)]
   end
 
   def check_preconditions(mod, list) do
