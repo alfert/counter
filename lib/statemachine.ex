@@ -47,9 +47,10 @@ defmodule Statemachine do
   def gen_cmd_list(_state, _mod, 0, _seed), do: []
   def gen_cmd_list(state, mod, size, seed) do
     {seed1, seed2} = split_seed(seed)
-    tree = StreamData.__call__({state, mod.command(state)}, seed1, size)
-    {_s, generated_call} = tree.root
-    {_, next_state} = mod.next_state(generated_call, state)
+    s = StreamData.constant(state)
+    tree = StreamData.__call__({s, mod.command(state)}, seed1, size)
+    {gen_state, generated_call} = tree.root
+    {_, next_state} = mod.next_state(generated_call, gen_state)
     [tree | gen_cmd_list(next_state, mod, size-1, seed2)]
   end
 
