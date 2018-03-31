@@ -87,17 +87,18 @@ defmodule CounterModelTest do
   end
   @type state_type :: any
   @type call_type :: {:call, atom, atom, list(any)}
+  def next_state(state, _res, call), do: next_state(call, state)
   @spec next_state(call :: call_type, state :: state_type)
       :: {Macro.t, state_type}
-  def next_state(c = {:call, _,:inc, _}, :init), do:  {the_fun(c), :zero}
-  def next_state(c = {:call, _,:clear, _}, :init), do:  {the_fun(c), :zero}
-  def next_state(c = {:call, _,:clear, _}, :zero), do:  {the_fun(c), :zero}
-  def next_state(c = {:call, _,:inc, _}, :zero), do:  {the_fun(c), :one}
-  def next_state(c = {:call, _,:inc, _}, :one), do:  {the_fun(c), :one}
-  def next_state(c = {:call, _,:clear, _}, :one), do:  {the_fun(c), :zero}
-  def next_state(c = {:call, _,:get, _}, state), do:  {the_fun(c), state}
+  def next_state({:call, _,:inc, _}, :init), do:  :zero
+  def next_state({:call, _,:clear, _}, :init), do:  :zero
+  def next_state({:call, _,:clear, _}, :zero), do:  :zero
+  def next_state({:call, _,:inc, _}, :zero), do:  :one
+  def next_state({:call, _,:inc, _}, :one), do:  :one
+  def next_state({:call, _,:clear, _}, :one), do:  :zero
+  def next_state({:call, _,:get, _}, state), do:  state
   # allow fail only in state :one
-  def next_state(c = {:call, _,:fail, _}, state = :one), do:  {the_fun(c), state}
+  def next_state({:call, _,:fail, _}, state = :one), do: state
 
   def precondition(:init, {:call, _, :get, _}), do: false
   def precondition(_, _), do: true
@@ -117,8 +118,5 @@ defmodule CounterModelTest do
   def postcondition(_old_state, {:call, _m, _f, _a}, _result) do
     false
   end
-
-
-  defp the_fun({:call, _m, f, _a} ), do: f
 
 end
