@@ -33,23 +33,6 @@ defmodule Statemachine do
     %__MODULE__{state: s, result: r, history: [event | h]}
   end
 
-
-  @spec commands(module) :: StreamData.t({mfa, any})
-  def commands(mod) do
-    StreamData.unfold(mod.initial_state(), fn state ->
-      # Assumption:
-      # The bind peals the command, which is required to
-      # identify the next state. The pealed command is given back
-      # as a  constant - will it shrink?
-      state
-      |> mod.command()
-      |> StreamData.map(fn cmd ->
-        IO.write "cmd is #{inspect cmd}"
-        {cmd, mod.next_state(cmd, state)}
-      end)
-    end)
-  end
-
   def generate_commands(mod) do
     %StreamData{generator: fn seed, size ->
       gen_cmd_list(mod.initial_state(), mod, size, seed)
