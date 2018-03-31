@@ -7,48 +7,28 @@ defmodule CounterStreamTest do
   use ExUnit.Case
   use ExUnitProperties
   alias Statemachine, as: SM
-  #
-  # 1. Generation of call tuples or the likes works
-  # 2. The shrinking of the generated list does not work.
 
   property "find the fail command" do
     assert_raise ExUnit.AssertionError, fn ->
       check all cmds <- StreamData.list_of(command(:one)) do
-        assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+        assert Enum.all?(cmds, &no_failed_call?/1)
       end
     end
   end
 
-  property "unfolded commands" do
-    my_cmd = fn state ->
-      new_cmd = command(state)
-      {_, new_state} = new_cmd |> Enum.take(1) |> hd() |> next_state(state)
-      {new_cmd, new_state}
-    end
-    assert_raise ExUnit.AssertionError, fn ->
-      check all cmds <- StreamData.unfold(initial_state(), my_cmd) do
-        # IO.puts "cmds = #{inspect cmds}"
-        assert Enum.all?(cmds, fn {:call, _, c, _} -> c != :fail end)
+  property "ensure that fail is finally generated" do
+    ex = assert_raise ExUnit.AssertionError, fn ->
+      check all cmds <- SM.generate_commands(__MODULE__) do
+        if Enum.any?(cmds, &failed_call?/1) do
+          IO.puts "cmds = #{inspect cmds}"
+        end
+        assert Enum.all?(cmds, &no_failed_call?/1)
       end
     end
+    assert ex.message =~ ":fail"
   end
 
-  property "new unfolded commands" do
-    check all cmds <- SM.generate_commands(__MODULE__) do
-      if Enum.any?(cmds, &failed_call?/1) do
-        IO.puts "cmds = #{inspect cmds}"
-      end
-      assert Enum.all?(cmds, &no_failed_call?/1)
-      # if  Enum.count(cmds)> 0 do
-      #   # first element cannot be fail because it is only generated
-      #   # in state :one
-      #   {:call, _, c, _} = List.first(cmds)
-      #   assert c != :fail
-      # end
-    end
-  end
-
-  property "check the counter command executon" do
+  property "check the counter command execution" do
     check all cmds <- SM.generate_commands(__MODULE__) do
       IO.puts "Commands are: #{inspect cmds}"
       Process.flag(:trap_exit, true)
