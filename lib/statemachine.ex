@@ -48,9 +48,9 @@ defmodule Statemachine do
   def gen_cmd_list(_state, _mod, 0, _position, _seed), do: []
   def gen_cmd_list(state, mod, size, position, seed) do
     {seed1, seed2} = split_seed(seed)
-    Logger.debug "gen_cmd_list: state is #{inspect state}"
+    # Logger.debug "gen_cmd_list: state is #{inspect state}"
     s = StreamData.constant(state)
-    Logger.debug "gen_cmd_list: s is #{inspect s}"
+    # Logger.debug "gen_cmd_list: s is #{inspect s}"
     tree = StreamData.__call__({s, mod.command(state)}, seed1, size)
     {gen_state, generated_call} = tree.root
     gen_result = {:var, position}
