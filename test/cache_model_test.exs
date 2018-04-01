@@ -59,7 +59,7 @@ defmodule TestCounterCache do
   Picks whether a command should be valid under the current state:
   don't flush an empty cache for no reason.
   """
-  def precondition(%__MODULE__{count: 0}, {:call, Cache, :flush, []}), do: false
+  # def precondition(%__MODULE__{count: 0}, {:call, Cache, :flush, []}), do: false
   def precondition(%__MODULE__{}, {:call, _mod, _fun, _args}), do: true
 
   @doc """
@@ -71,7 +71,7 @@ defmodule TestCounterCache do
   end
   def next_state(s=%__MODULE__{entries: l, count: n, max: m}, _res,
            {:call, Cache, :cache, [k, v]}) do
-    case List.keyfind(l, k, 1, false) do
+    case List.keyfind(l, k, 0, false) do
         # When the cache is at capacity, the first element is dropped (tl(L))
         # before adding the new one at the end
         false when n == m -> update_entries(s, tl(l) ++ [{k, v}])
@@ -79,7 +79,7 @@ defmodule TestCounterCache do
         # and the counter incremented
         false when n < m  -> update_entries(s, l ++ [{k, v}])
         # If the entry key is a duplicate, it replaces the old one without refreshing it
-        {k, _}            -> update_entries(s, List.keyreplace(l, k, 1, {k, v}))
+        {k, _}            -> update_entries(s, List.keyreplace(l, k, 0, {k, v}))
     end
   end
   def next_state(state, _res, {:call, _mod, _fun, _args}), do: state
@@ -90,14 +90,14 @@ defmodule TestCounterCache do
 
 
   @doc """
-  Given the state `State' *prior* to the call `{call, Mod, Fun, Args}',
-  determine whether the result `Res' (coming from the actual system)
+  Given the state `state` *prior* to the call `{call, mod, fun, args}`,
+  determine whether the result `res` (coming from the actual system)
   makes sense.
   """
   def postcondition(%__MODULE__{entries: l}, {:call, Cache, :find, [key]}, res) do
-    case List.keyfind(l, key, 1, false) do
+    case List.keyfind(l, key, 0, false) do
         false      -> res == {:error, :not_found}
-        {key, Val} -> res == {:ok, val}
+        {^key, val} -> res == {:ok, val}
     end
   end
   def postcondition(_state, {:call, _mod, _fun, _args}, _res), do: true
