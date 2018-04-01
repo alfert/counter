@@ -103,10 +103,14 @@ defmodule TestCounterCache do
   makes sense.
   """
   def postcondition(%__MODULE__{entries: l}, {:call, Cache, :find, [key]}, res) do
-    case List.keyfind(l, key, 0, false) do
-        false      -> res == {:error, :not_found}
+    ret_val = case List.keyfind(l, key, 0, false) do
+        false       -> res == {:error, :not_found}
         {^key, val} -> res == {:ok, val}
     end
+    if not ret_val do
+      Logger.error "Postcondition failed: find(#{inspect key}) resulted in #{inspect res})"
+    end
+    ret_val
   end
   def postcondition(_state, {:call, _mod, _fun, _args}, _res), do: true
 

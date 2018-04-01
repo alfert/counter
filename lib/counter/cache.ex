@@ -29,20 +29,23 @@ defmodule Counter.Cache do
   from the start.
   """
   def cache(key,  val) do
+    require Logger
     case :ets.match(@cache_name, {:"$1", {key, :"_"}}) do # find dupes
         [[n]] ->
             :ets.insert(@cache_name, {n, {key, val}}) # overwrite dupe
         [] ->
             case :ets.lookup(@cache_name, :count) do # insert new
-                [{:count, max, max}] ->
+                [{:count, current, max}] when current >= max ->
                     # table is full, overwrite from the beginning
                     :ets.insert(@cache_name, [{1, {key, val}}, {:count, 1, max}])
-                [{:count, current, max}] ->
+                [{:count, current, max}] when current < max ->
                     # add entries incrementally
                     :ets.insert(@cache_name, [{current+1, {key, val}},
                                        {:count, current + 1, max}])
             end
     end
+    Logger.debug "Cache.cache(#{inspect key}, #{inspect val})"
+    Logger.debug "Cache is: #{inspect :ets.tab2list(@cache_name)}"
   end
 
   @doc """
