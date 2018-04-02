@@ -1,0 +1,15 @@
+digraph finite_state_machine {
+	rankdir=LR;
+	# size="8,5"
+	node [shape = doublecircle]; init;
+	node [shape = circle];
+	init -> zero [ label = "clear()"];
+	init -> zero [ label = "inc()"];
+	init -> init [ label = "get()"];
+	zero -> zero [ label = "clear()"];
+	zero -> zero [ label = "get()"];
+	zero -> one [ label = "inc()"];
+	one -> one [ label = "get()"];
+	one -> one [ label = "inc()"];
+	one -> zero [ label = "clear()"];
+}
