@@ -1,18 +1,17 @@
-defmodule TestCounterCache do
+defmodule TestCounterCache.Stream do
 
 
   use ExUnit.Case
   use ExUnitProperties
   alias Statemachine, as: SM
   require Logger
-  import ExUnit.CaptureLog
 
   alias Counter.Cache
 
 
   @cache_size 10
 
-  property "run the buggy cache" do
+  property "run the sequential cache" do
     check all cmds <- SM.generate_commands(__MODULE__) do
       Cache.start_link(@cache_size)
       events = SM.run_commands(__MODULE__, cmds)

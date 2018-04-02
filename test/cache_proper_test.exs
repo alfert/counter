@@ -1,4 +1,4 @@
-defmodule TestCounterCache do
+defmodule TestCounterCache.Proper do
 
 
   use ExUnit.Case
@@ -13,7 +13,7 @@ defmodule TestCounterCache do
 
   @cache_size 10
 
-  property "run the buggy cache" do
+  property "run the sequential cache" do
     forall cmds <- commands(__MODULE__) do
       Cache.start_link(@cache_size)
       {history, state, result} = run_commands(__MODULE__, cmds)
