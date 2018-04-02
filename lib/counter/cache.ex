@@ -71,7 +71,7 @@ defmodule Counter.Cache do
     end)
   end
 
-  def init(n) do
+  def init([n]) when is_integer(n) and n > 0 do
     :ets.new(@cache_name, [:public, :named_table])
     :ets.insert(@cache_name, {:count, 0, n})
     {:ok, :nostate}
