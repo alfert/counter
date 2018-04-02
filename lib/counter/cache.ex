@@ -48,7 +48,7 @@ defmodule Counter.Cache do
                                        {:count, current + 1, max}])
             end
     end
-    Logger.debug "Updated Cache is: #{inspect :ets.tab2list(@cache_name)}"
+    Logger.debug "Updated Cache is: #{inspect dump()}"
   end
 
   @doc """
@@ -58,6 +58,14 @@ defmodule Counter.Cache do
     [{:count, _, max}] = :ets.lookup(@cache_name, :count)
     :ets.delete_all_objects(@cache_name)
     :ets.insert(@cache_name, {:count, 0, max})
+  end
+
+  def dump() do
+    :ets.tab2list(@cache_name)
+    |> Enum.sort_by(fn
+      {index, {_k, _v}} -> index
+      {:count, _, _} -> :count
+    end)
   end
 
   def init(n) do
