@@ -1,17 +1,8 @@
 defmodule CounterTest do
   @moduledoc """
-  A simple state machine for property testing the  `StreamState.Test.Counter`.
+  A simple state machine for property testing the `Counter`.
 
   We use only three states: `:init`, `:zero` and `:one`.
-
-  ## TODO:
-  * define functions for the three states, their pre- and postconditions
-    ==> Do we call from these functions the regular ones, i.e. the System
-        under test?
-  * define a generator `commands` for symbolic calls -> in `StreamState`
-  * define a function `run_commands` in StreamState to run the commands in
-    `StreamState`
-
   """
 
   use ExUnit.Case

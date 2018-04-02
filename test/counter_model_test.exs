@@ -4,6 +4,11 @@ defmodule CounterModelTest do
 
   This state machine has three simple states: `:init`, `:zero` and
   `:one`.
+
+  This state machine has an additional edge `fail()`, which is a non-
+  existing function. Everytime it is called in the real run, the
+  test is aborted with a failure. The shrinking process should run
+  towards `clear()`-`inc()`-`fail()` or `inc()`-`inc()`-`fail()`.
   """
 
   use ExUnit.Case

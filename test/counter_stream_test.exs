@@ -1,7 +1,10 @@
 defmodule CounterStreamTest do
   @moduledoc """
-  A statemachine testing approach on top of `stream_data`. This approach
-  is modeled after FishCake's `stream_code`.
+  A statemachine testing approach on top of `stream_data`.
+
+  The test fails if the counter reaches `6`. The shrinking process
+  works towards six times `inc()` and stops then.
+
   """
 
   use ExUnit.Case
