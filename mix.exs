@@ -27,7 +27,8 @@ defmodule Counter.Mixfile do
       {:propcheck, "~> 1.0"},
       # {:stream_data, path: "../stream_data", override: true},
       {:stream_data, "~> 0.4"},
-      {:stream_code, path: "../stream_code"}
+      {:stream_code, path: "../stream_code"},
+      {:dialyxir, "~> 0.5", only: [:dev], runtime: false}
     ]
   end
 end
