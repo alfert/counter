@@ -1,19 +1,18 @@
 defmodule CounterTest.Cache.Eqc do
   @moduledoc """
-  Testing of the cache based on the EQC api.
+  Testing of the cache based on the EQC api and StreamData as backend.
   """
 
   use ExUnit.Case
   use ExUnitProperties
   alias Counter.StateM, as: SM
   require Logger
-
   alias Counter.Cache
 
 
   @cache_size 10
 
-  property "run the sequential cache" do
+  property "run the sequential cache (StreamData)" do
     [{_mod, bin_code}] = Code.load_file(__ENV__.file)
     check all cmds <- SM.commands(__MODULE__, bin_code) do
       Logger.debug "Commands to run: #{inspect cmds}"
@@ -41,6 +40,7 @@ defmodule CounterTest.Cache.Eqc do
   code related to key reuse or matching, but without losing the ability
   to 'fuzz' the system.
   """
+  # def key(), do: one_of([
   def key(), do: one_of([
     integer(1..@cache_size),
     integer()
