@@ -3,6 +3,7 @@ defmodule Counter.PropCheck.StateM do
   @callback initial_state() :: any
 
   use PropCheck
+  require Logger
 
   @type symbolic_state :: any
   @type dynamic_state :: any
@@ -13,7 +14,10 @@ defmodule Counter.PropCheck.StateM do
   @type history_element :: {dynamic_state, any}
   @type result_t :: :ok | {:pre_condition, any} | {:post_condition, any} |
     {:exception, any}
-
+  @type gen_fun_t :: (state_t -> PropCheck.BasicTypes.type)
+  @type cmd_t ::
+      {:args, module, String.t, atom, gen_fun_t} |
+      {:cmd, module, String.t, gen_fun_t}
 
   @type t :: %__MODULE__{
     history: [history_element],
@@ -29,15 +33,18 @@ defmodule Counter.PropCheck.StateM do
   @doc """
   Generates the command list for the given module
   """
-  @spec commands(module) :: PropCheck.BasicTypes.type
-  def commands(mod) do
+  @spec commands(module, binary) :: PropCheck.BasicTypes.type
+  def commands(mod, bin_module) do
+    cmd_list = command_list(bin_module)
+    # Logger.debug "commands:  cmd_list = #{inspect cmd_list}"
+    gen_commands(mod, cmd_list)
+  end
+
+  @spec gen_commands(module, [cmd_t]) :: PropCheck.BasicTypes.type
+  def gen_commands(mod, cmd_list) do
     initial_state = mod.initial_state()
-    gen_cmd = sized(size, gen_cmd_list(size, mod, initial_state, 1))
+    gen_cmd = sized(size, gen_cmd_list(size, cmd_list, initial_state, 1))
     such_that cmds <- gen_cmd, when: is_valid(mod, initial_state, cmds)
-      # let list <-
-      #     sized(size, gen_cmd_list(size, mod, initial_state, 1) |> noshrink()) do
-      #   shrink_list(list)
-      # end
   end
 
   # TODO: How is this function to be defined?
@@ -48,21 +55,26 @@ defmodule Counter.PropCheck.StateM do
   @doc """
   The internally used recursive generator for the command list
   """
-  @spec gen_cmd_list(pos_integer, module, state_t, pos_integer) :: PropCheck.BasicTypes.type
-  def gen_cmd_list(size, mod, state, step_counter) do
-    frequency([
-      {1, []},
-      {size, let call <-
-        # TODO: auto-detect the set of commands and select one of them
-        (such_that c <- mod.command(state), when: check_precondition(state, c))
-        do
-          gen_result = {:var, step_counter}
-          gen_state = call_next_state(state, call, gen_result)
-          let cmds <- gen_cmd_list(size - 1, mod, gen_state, step_counter + 1) do
-            [{:set, gen_result, call} | cmds]
-          end
-        end}
-      ])
+  @spec gen_cmd_list(pos_integer, [cmd_t], state_t, pos_integer) :: PropCheck.BasicTypes.type
+  def gen_cmd_list(0, _cmd_list, _state, _step_counter), do: exactly([])
+  def gen_cmd_list(size, cmd_list, state, step_counter) do
+    # Logger.debug "gen_cmd_list: cmd_list = #{inspect cmd_list}"
+    cmds = cmd_list
+    |> Enum.map(fn {:cmd, _mod, _f, arg_fun} -> arg_fun.(state) end)
+    # |> fn l ->
+    #   Logger.debug("gen_cmd_list: call list is #{inspect l}")
+    #   l end.()
+    |> oneof() # TODO: check for frequencies here!
+
+    let call <-
+      (such_that c <- cmds, when: check_precondition(state, c))
+      do
+        gen_result = {:var, step_counter}
+        gen_state = call_next_state(state, call, gen_result)
+        let cmds <- gen_cmd_list(size - 1, cmd_list, gen_state, step_counter + 1) do
+          [{state, {:set, gen_result, call}} | cmds]
+        end
+      end
   end
 
   ###
@@ -84,12 +96,12 @@ defmodule Counter.PropCheck.StateM do
   end
 
   @spec execute_cmd({state_t, symbolic_call}) :: {state_t, symbolic_call, result_t}
-  def execute_cmd({state, c = {:call, m, f, args}}) do
+  def execute_cmd({state, {:set, {:var, _}, c = {:call, m, f, args}}}) do
     result = if check_precondition(state, c) do
       try do
         result = apply(m, f, args)
         if check_postcondition(state, c, result) do
-          result
+          {:ok, result}
         else
           {:post_condition, result}
         end
@@ -105,11 +117,12 @@ defmodule Counter.PropCheck.StateM do
   end
 
   def update_history(event = {s, _, r}, %__MODULE__{history: h}) do
-    %__MODULE__{state: s, result: r, history: [event | h]}
+    {code, _result_value} = r
+    %__MODULE__{state: s, result: code, history: [event | h]}
   end
 
-  @spec call_next_state(symbolic_call, state_t, any) :: state_t
-  def call_next_state({:call, mod, f, args}, state, result) do
+  @spec call_next_state(state_t, symbolic_call, any) :: state_t
+  def call_next_state(state, {:call, mod, f, args}, result) do
     next_fun = (Atom.to_string(f) <> "_next")
       |> String.to_atom
     apply(mod, next_fun, [state, args, result])
