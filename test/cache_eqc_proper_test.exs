@@ -34,6 +34,22 @@ defmodule CounterTest.Cache.Eqc.Proper do
   end
 
   ###########################
+  # Testing the command generators and such
+
+  test "commands produces something" do
+    [{_mod, bin_code}] = Code.load_file(__ENV__.file)
+    cmd_gen = SM.commands(__MODULE__, bin_code)
+    size = 10
+    {:ok, cmds} = produce(cmd_gen, size)
+
+    assert is_list(cmds)
+
+    first = hd(cmds)
+    initial = initial_state()
+    assert {initial, {:set, {:var, 1}, {:call, __MODULE__, _, _}}} = first
+  end
+
+  ###########################
 
   # the state for testing (= the model)
   defstruct [max: @cache_size, entries: [], count: 0]
