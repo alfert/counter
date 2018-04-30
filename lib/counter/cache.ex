@@ -30,14 +30,14 @@ defmodule Counter.Cache do
   from the start.
   """
   def cache(key,  val) do
-    Logger.debug "Cache.cache(#{inspect key}, #{inspect val})"
+    # Logger.debug "Cache.cache(#{inspect key}, #{inspect val})"
     case :ets.match(@cache_name, {:"$1", {key, :"_"}}) do # find dupes
         [[n]] ->
             # Logger.debug "Cache: override as pos #{n}"
             :ets.insert(@cache_name, {n, {key, val}}) # overwrite dupe
         [] -> insert(key, val)
     end
-    Logger.debug "Updated Cache is: #{inspect dump()}"
+    # Logger.debug "Updated Cache is: #{inspect dump()}"
   end
 
   defp insert(key, val) do
