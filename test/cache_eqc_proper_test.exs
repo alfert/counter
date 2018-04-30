@@ -30,7 +30,37 @@ defmodule CounterTest.Cache.Eqc.Proper do
           Result: #{inspect events.result, pretty: true}
           """)
       |> aggregate(SM.command_names cmds)
+      |> collect(events
+        |> history_of_state()
+        |> Enum.map(fn model -> model.count end)
+        |> Enum.max())
     end
+  end
+
+  property "run the misconfigured sequential cache (PropCheck)", [:verbose] do
+    [{_mod, bin_code}] = Code.load_file(__ENV__.file)
+    forall cmds <- SM.commands(__MODULE__, bin_code) do
+      # Logger.debug "Commands to run: #{inspect cmds}"
+      Cache.start_link(div(@cache_size, 2))
+      events = SM.run_commands(cmds)
+      Cache.stop()
+      # Logger.debug "Events are: #{inspect events}"
+
+      (events.result == :ok)
+      # |> collect(length cmds)
+      |> when_fail(
+          IO.puts """
+          History: #{inspect events.history, pretty: true}
+          State: #{inspect events.state, pretty: true}
+          Result: #{inspect events.result, pretty: true}
+          """)
+      |> aggregate(SM.command_names cmds)
+      |> collect(events
+        |> history_of_state()
+        |> Enum.map(fn model -> model.count end)
+        |> Enum.max())
+    end
+    |> fails
   end
 
   ###########################
@@ -38,6 +68,14 @@ defmodule CounterTest.Cache.Eqc.Proper do
 
   # the state for testing (= the model)
   defstruct [max: @cache_size, entries: [], count: 0]
+
+  # extract the state from events
+  def find_state_of_events(events), do: events.state
+  # extract the list of state from the history
+  def history_of_state(events) do
+    events.history
+    |> Enum.map(fn {state, _call, _result} -> state end)
+  end
 
   ###########################
   # Testing the command generators and such
