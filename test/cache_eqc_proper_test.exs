@@ -1,4 +1,4 @@
-defmodule CounterTest.Cache.Eqc do
+defmodule CounterTest.Cache.Eqc.Proper do
   @moduledoc """
   Testing of the cache based on the EQC api and proper as backend.
   """
@@ -14,13 +14,22 @@ defmodule CounterTest.Cache.Eqc do
 
   property "run the sequential cache (PropCheck)" do
     [{_mod, bin_code}] = Code.load_file(__ENV__.file)
-    forall cmds <- PSM.commands(__MODULE__, bin_code) do
+    forall cmds <- SM.commands(__MODULE__, bin_code), :verbose do
       Logger.debug "Commands to run: #{inspect cmds}"
       Cache.start_link(@cache_size)
       events = SM.run_commands(cmds)
       Cache.stop()
+      Logger.debug "Events are: #{inspect events}"
 
-      assert events.result == :ok
+      (events.result == :ok)
+      |> when_fail(
+          IO.puts """
+          History: #{inspect events.history, pretty: true}
+          State: #{inspect events.state, pretty: true}
+          Result: #{inspect events.result, pretty: true}
+          """)
+      # |> aggregate(command_names cmds)
+      |> collect(length cmds)
     end
   end
 
@@ -42,7 +51,6 @@ defmodule CounterTest.Cache.Eqc do
   """
   # def key(), do: one_of([
   def key(), do: oneof([
-    # integer(1..@cache_size),
     integer(1, @cache_size),
     integer()
     ])
@@ -106,7 +114,7 @@ defmodule CounterTest.Cache.Eqc do
   def flush(), do: Cache.flush()
   #def flush([]), do: Cache.flush()
   # generator for flush
-  def flush_args(_state), do: constant([])
+  def flush_args(_state), do: []
   # next state is: cache is empty
   def flush_next(state, _args, _res) do
     update_entries(state, [])
