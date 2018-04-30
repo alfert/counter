@@ -15,13 +15,14 @@ defmodule CounterTest.Cache.Eqc.Proper do
   property "run the sequential cache (PropCheck)" do
     [{_mod, bin_code}] = Code.load_file(__ENV__.file)
     forall cmds <- SM.commands(__MODULE__, bin_code), :verbose do
-      Logger.debug "Commands to run: #{inspect cmds}"
+      # Logger.debug "Commands to run: #{inspect cmds}"
       Cache.start_link(@cache_size)
       events = SM.run_commands(cmds)
       Cache.stop()
-      Logger.debug "Events are: #{inspect events}"
+      # Logger.debug "Events are: #{inspect events}"
 
       (events.result == :ok)
+      |> collect(length cmds)
       |> when_fail(
           IO.puts """
           History: #{inspect events.history, pretty: true}
@@ -29,9 +30,14 @@ defmodule CounterTest.Cache.Eqc.Proper do
           Result: #{inspect events.result, pretty: true}
           """)
       # |> aggregate(command_names cmds)
-      |> collect(length cmds)
     end
   end
+
+  ###########################
+  # Developing the model
+
+  # the state for testing (= the model)
+  defstruct [max: @cache_size, entries: [], count: 0]
 
   ###########################
   # Testing the command generators and such
@@ -45,15 +51,10 @@ defmodule CounterTest.Cache.Eqc.Proper do
     assert is_list(cmds)
 
     first = hd(cmds)
-    initial = initial_state()
-    assert {initial, {:set, {:var, 1}, {:call, __MODULE__, _, _}}} = first
+    assert {%__MODULE__{}, {:set, {:var, 1}, {:call, __MODULE__, _, _}}} = first
   end
 
   ###########################
-
-  # the state for testing (= the model)
-  defstruct [max: @cache_size, entries: [], count: 0]
-
   # Generators for keys and values
 
   @doc """
