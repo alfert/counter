@@ -145,6 +145,14 @@ defmodule Counter.PropCheck.StateM do
     apply(mod, post_fun, [state, args, result])
   end
 
+  def command_names(cmds) do
+    cmds
+    |> Enum.map(fn {_state, {:set, _var, {:call, m, f, args}}} ->
+      # "#{m}.#{f}/#{length(args)}"
+      {m, f, length(args)}
+    end)
+  end
+
 
   @doc """
   Detects alls commands within `mod_bin_code`, i.e. all functions with the

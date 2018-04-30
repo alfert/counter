@@ -12,9 +12,9 @@ defmodule CounterTest.Cache.Eqc.Proper do
 
   @cache_size 10
 
-  property "run the sequential cache (PropCheck)" do
+  property "run the sequential cache (PropCheck)", [:verbose] do
     [{_mod, bin_code}] = Code.load_file(__ENV__.file)
-    forall cmds <- SM.commands(__MODULE__, bin_code), :verbose do
+    forall cmds <- SM.commands(__MODULE__, bin_code) do
       # Logger.debug "Commands to run: #{inspect cmds}"
       Cache.start_link(@cache_size)
       events = SM.run_commands(cmds)
@@ -22,14 +22,14 @@ defmodule CounterTest.Cache.Eqc.Proper do
       # Logger.debug "Events are: #{inspect events}"
 
       (events.result == :ok)
-      |> collect(length cmds)
+      # |> collect(length cmds)
       |> when_fail(
           IO.puts """
           History: #{inspect events.history, pretty: true}
           State: #{inspect events.state, pretty: true}
           Result: #{inspect events.result, pretty: true}
           """)
-      # |> aggregate(command_names cmds)
+      |> aggregate(SM.command_names cmds)
     end
   end
 
