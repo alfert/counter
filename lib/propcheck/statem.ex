@@ -43,7 +43,7 @@ defmodule Counter.PropCheck.StateM do
   @spec gen_commands(module, [cmd_t]) :: PropCheck.BasicTypes.type
   def gen_commands(mod, cmd_list) do
     initial_state = mod.initial_state()
-    gen_cmd = sized(size, gen_cmd_list(size, cmd_list, initial_state, 1))
+    gen_cmd = sized(size, gen_cmd_list(size, cmd_list, mod, initial_state, 1))
     such_that cmds <- gen_cmd, when: is_valid(mod, initial_state, cmds)
   end
 
@@ -55,26 +55,38 @@ defmodule Counter.PropCheck.StateM do
   @doc """
   The internally used recursive generator for the command list
   """
-  @spec gen_cmd_list(pos_integer, [cmd_t], state_t, pos_integer) :: PropCheck.BasicTypes.type
-  def gen_cmd_list(0, _cmd_list, _state, _step_counter), do: exactly([])
-  def gen_cmd_list(size, cmd_list, state, step_counter) do
+  @spec gen_cmd_list(pos_integer, [cmd_t], module, state_t, pos_integer) :: PropCheck.BasicTypes.type
+  def gen_cmd_list(0, _cmd_list, _mod, _state, _step_counter), do: exactly([])
+  def gen_cmd_list(size, cmd_list, mod, state, step_counter) do
     # Logger.debug "gen_cmd_list: cmd_list = #{inspect cmd_list}"
-    cmds = cmd_list
+    cmds_with_args = cmd_list
     |> Enum.map(fn {:cmd, _mod, _f, arg_fun} -> arg_fun.(state) end)
     # |> fn l ->
     #   Logger.debug("gen_cmd_list: call list is #{inspect l}")
     #   l end.()
-    |> oneof() # TODO: check for frequencies here!
+    cmds = if :erlang.function_exported(mod, :weight, 2) do
+      freq_cmds(cmds_with_args, state, mod)
+    else
+      oneof(cmds_with_args)
+    end
 
     let call <-
       (such_that c <- cmds, when: check_precondition(state, c))
       do
         gen_result = {:var, step_counter}
         gen_state = call_next_state(state, call, gen_result)
-        let cmds <- gen_cmd_list(size - 1, cmd_list, gen_state, step_counter + 1) do
+        let cmds <- gen_cmd_list(size - 1, cmd_list, mod, gen_state, step_counter + 1) do
           [{state, {:set, gen_result, call}} | cmds]
         end
       end
+  end
+
+  def freq_cmds(cmd_list, state, mod) do
+    cmd_list
+    |> Enum.map(fn c = {:call, _m, f, _a} ->
+      {mod.weight(state, f), c}
+    end)
+    |> frequency()
   end
 
   ###
