@@ -12,7 +12,7 @@ defmodule Counter.PropCheck.StateM do
   @type symbolic_call :: {:call, module, atom, [any]}
   @type command :: {:set, symbolic_var, symbolic_call}
   @type history_element :: {dynamic_state, any}
-  @type result_t :: :ok | {:pre_condition, any} | {:post_condition, any} |
+  @type result_t :: {:ok, any} | {:pre_condition, any} | {:post_condition, any} |
     {:exception, any}
   @type gen_fun_t :: (state_t -> PropCheck.BasicTypes.type)
   @type cmd_t ::
@@ -33,14 +33,14 @@ defmodule Counter.PropCheck.StateM do
   @doc """
   Generates the command list for the given module
   """
-  @spec commands(module, binary) :: PropCheck.BasicTypes.type
+  @spec commands(module, binary) :: :proper_types.type()
   def commands(mod, bin_module) do
     cmd_list = command_list(bin_module)
     # Logger.debug "commands:  cmd_list = #{inspect cmd_list}"
     gen_commands(mod, cmd_list)
   end
 
-  @spec gen_commands(module, [cmd_t]) :: PropCheck.BasicTypes.type
+  @spec gen_commands(module, [cmd_t]) :: :proper_types.type()
   def gen_commands(mod, cmd_list) do
     initial_state = mod.initial_state()
     gen_cmd = sized(size, gen_cmd_list(size, cmd_list, mod, initial_state, 1))
@@ -107,7 +107,7 @@ defmodule Counter.PropCheck.StateM do
     end)
   end
 
-  @spec execute_cmd({state_t, symbolic_call}) :: {state_t, symbolic_call, result_t}
+  @spec execute_cmd({state_t, command}) :: {state_t, symbolic_call, result_t}
   def execute_cmd({state, {:set, {:var, _}, c = {:call, m, f, args}}}) do
     result = if check_precondition(state, c) do
       try do
