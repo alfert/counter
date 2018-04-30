@@ -17,6 +17,11 @@ A second system under test is the sequential cache, ported from
 [Proper Testing in Erlang](http://propertesting.com/book_stateful_properties.html)
 to Elixir. The test cases are a direct translation to PropCheck and StreamData.
 
+## Open issues of the StreamData based implementation
+
+* the history cannot be inspected easily
+* aggregation of commands is missing (generally in StreamData)
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
