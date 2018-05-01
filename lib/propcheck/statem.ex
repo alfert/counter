@@ -33,14 +33,22 @@ defmodule Counter.PropCheck.StateM do
   @callback weight(symbolic_state, symbolic_call) :: pos_integer
   @optional_callbacks weight: 2
 
-  @known_suffixes [:pre, :post, :args, :next]
 
   defmacro __using__(_options) do
     quote do
       import unquote(__MODULE__)
+      Module.register_attribute __MODULE__, :commands, accumulate: true
+      @before_compile unquote(__MODULE__)
     end
   end
 
+  defmacro __before_compile__(_env) do
+    quote do
+      def __all_commands__(), do: @commands
+    end
+  end
+
+  @known_suffixes [:pre, :post, :args, :next]
   defmacro command(name, do: block) do
     pre  = String.to_atom("#{name}_pre")
     next = String.to_atom("#{name}_next")
@@ -50,10 +58,10 @@ defmodule Counter.PropCheck.StateM do
       def unquote(pre)(_state, _call), do: true
       def unquote(next)(state, _call, _result), do: state
       def unquote(post)(_state, _call, _res), do: true
-      def unquote(args)(_state), do: []
+      def unquote(args)(_state), do: fixed_list([])
       defoverridable [{unquote(pre), 2}, {unquote(next), 3},
         {unquote(post), 3}, {unquote(args), 1}]
-
+      @commands Atom.to_string(unquote(name))
       unquote(Macro.postwalk(block, &rename_def_in_command(&1, name)))
     end
   end
@@ -78,8 +86,8 @@ defmodule Counter.PropCheck.StateM do
   Generates the command list for the given module
   """
   @spec commands(module, binary) :: :proper_types.type()
-  def commands(mod, bin_module) do
-    cmd_list = command_list(bin_module)
+  def commands(mod, bin_module \\ "") do
+    cmd_list = command_list(mod, bin_module)
     # Logger.debug "commands:  cmd_list = #{inspect cmd_list}"
     gen_commands(mod, cmd_list)
   end
@@ -214,9 +222,18 @@ defmodule Counter.PropCheck.StateM do
   Detects alls commands within `mod_bin_code`, i.e. all functions with the
   same prefix and a suffix `_command` or `_args` and a prefix `_next`.
   """
-  @spec command_list(binary) :: [{:cmd, module, String.t, (state_t -> symbolic_call)}]
-  def command_list(mod_bin_code) do
-    {mod, all_funs} = all_functions(mod_bin_code)
+  @spec command_list(module, binary) :: [{:cmd, module, String.t, (state_t -> symbolic_call)}]
+  def command_list(mod, "") do
+    mod
+    |> find_commands()
+    |> Enum.map(fn {cmd, _arity} ->
+      args_fun = fn state -> apply(mod, String.to_atom(cmd <> "_args"), [state]) end
+      args = gen_call(mod, String.to_atom(cmd), args_fun)
+      {:cmd, mod, cmd, args}
+    end)
+  end
+  def command_list(mod, mod_bin_code) do
+    {^mod, all_funs} = all_functions(mod_bin_code)
     cmd_impls = find_commands(mod_bin_code)
 
     cmd_impls
@@ -249,7 +266,9 @@ defmodule Counter.PropCheck.StateM do
     |> is_integer()
   end
 
-  @spec find_commands(binary) :: [{String.t, arity}]
+  @spec find_commands(binary|module) :: [{String.t, arity}]
+  def find_commands(mod) when is_atom(mod), do:
+    mod.__all_commands__() |> Enum.map(& ({&1, 0}))
   def find_commands(mod_bin_code) do
     {_mod, funs} = all_functions(mod_bin_code)
 
