@@ -1,6 +1,5 @@
 defmodule Counter.PropCheck.StateM do
 
-  @callback initial_state() :: any
 
   use PropCheck
   require Logger
@@ -29,6 +28,48 @@ defmodule Counter.PropCheck.StateM do
     state: nil,
     result: :ok
   ]
+
+  @callback initial_state() :: symbolic_state
+  @callback weight(symbolic_state, symbolic_call) :: pos_integer
+  @optional_callbacks weight: 2
+
+  @known_suffixes [:pre, :post, :args, :next]
+
+  defmacro __using__(_options) do
+    quote do
+      import unquote(__MODULE__)
+    end
+  end
+
+  defmacro command(name, do: block) do
+    pre  = String.to_atom("#{name}_pre")
+    next = String.to_atom("#{name}_next")
+    post = String.to_atom("#{name}_post")
+    quote do
+      def unquote(pre)(_state, _call), do: true
+      def unquote(next)(state, _call, _result), do: state
+      def unquote(post)(_state, _call, _res), do: true
+      defoverridable [{unquote(pre), 2}, {unquote(next), 3}, {unquote(post), 3}]
+
+      unquote(Macro.postwalk(block, &rename_def_in_command(&1, name)))
+    end
+  end
+
+  def rename_def_in_command({:def, c1, [{:impl, c2, impl_args}, impl_body]}, name) do
+      # Logger.error "Found impl with body #{inspect impl_body}"
+    {:def, c1, [{name, c2, impl_args}, impl_body]}
+  end
+  def rename_def_in_command({:def, c1, [{suffix_name, c2, args}, body]}, name)
+    when suffix_name in @known_suffixes
+    do
+      new_name = String.to_atom("#{name}_#{suffix_name}")
+      # Logger.error "Found suffix: #{new_name}"
+      {:def, c1,[{new_name, c2, args}, body]}
+    end
+  def rename_def_in_command(ast, _name) do
+    # Logger.warn "Found ast = #{inspect ast}"
+    ast
+  end
 
   @doc """
   Generates the command list for the given module
