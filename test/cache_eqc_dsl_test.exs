@@ -125,9 +125,6 @@ defmodule CounterTest.Cache.Eqc.Proper do
   ###### Command: find
 
   command :find do
-    # idea: take the AST, do Macro.prewalk(ast, fun) or Macro.postwalk()
-    #       to patch the names of the defined functions (impl => `name`, other => `name_`other)
-    # and finally defines the defaults (args(_)=[], next(s, _, _)=s, pre(_,_)=true )
     def impl(key), do: Cache.find(key)
     def args(state), do: fixed_list([key()])
     def post(%__MODULE__{entries: l}, [key], res) do
@@ -165,13 +162,10 @@ defmodule CounterTest.Cache.Eqc.Proper do
   command :flush do
     # implement flush
     def impl(), do: Cache.flush()
-    # generator for flush
-    def args(_state), do: []
     # next state is: cache is empty
     def next(state, _args, _res) do
       update_entries(state, [])
     end
-    def post(_state, _args, _res), do: true
     # pre condition: do not call flush() twice
     def pre(%__MODULE__{count: c}, _args), do: c != 0
   end

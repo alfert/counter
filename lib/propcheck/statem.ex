@@ -45,11 +45,14 @@ defmodule Counter.PropCheck.StateM do
     pre  = String.to_atom("#{name}_pre")
     next = String.to_atom("#{name}_next")
     post = String.to_atom("#{name}_post")
+    args = String.to_atom("#{name}_args")
     quote do
       def unquote(pre)(_state, _call), do: true
       def unquote(next)(state, _call, _result), do: state
       def unquote(post)(_state, _call, _res), do: true
-      defoverridable [{unquote(pre), 2}, {unquote(next), 3}, {unquote(post), 3}]
+      def unquote(args)(_state), do: []
+      defoverridable [{unquote(pre), 2}, {unquote(next), 3},
+        {unquote(post), 3}, {unquote(args), 1}]
 
       unquote(Macro.postwalk(block, &rename_def_in_command(&1, name)))
     end
