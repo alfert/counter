@@ -13,7 +13,6 @@ defmodule CounterTest.Cache.Eqc.Proper do
   @cache_size 10
 
   property "run the sequential cache (PropCheck)", [:verbose] do
-    # [{_mod, bin_code}] = Code.load_file(__ENV__.file)
     forall cmds <- commands(__MODULE__) do
       # Logger.debug "Commands to run: #{inspect cmds}"
       Cache.start_link(@cache_size)
@@ -38,7 +37,6 @@ defmodule CounterTest.Cache.Eqc.Proper do
   end
 
   property "run the misconfigured sequential cache (PropCheck)", [:verbose] do
-    # [{_mod, bin_code}] = Code.load_file(__ENV__.file)
     forall cmds <- commands(__MODULE__) do
       # Logger.debug "Commands to run: #{inspect cmds}"
       Cache.start_link(div(@cache_size, 2))
@@ -81,7 +79,6 @@ defmodule CounterTest.Cache.Eqc.Proper do
   # Testing the command generators and such
 
   test "commands produces something" do
-    # [{_mod, bin_code}] = Code.load_file(__ENV__.file)
     cmd_gen = commands(__MODULE__)
     size = 10
     {:ok, cmds} = produce(cmd_gen, size)
